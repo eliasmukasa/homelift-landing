@@ -82,7 +82,7 @@ export default function LandingPage() {
       </section>
 
       {/* ──────────────────── How it works ──────────────────── */}
-      <section className="bg-gray-900 py-16 px-6 text-center">
+      <section className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
         <h2 className="text-3xl font-bold mb-12">How HomeLift Works</h2>
         <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-8">
           {[
