@@ -1,0 +1,6 @@
+[build]
+  command = "npm run build"
+  publish = ".next"         # for dynamic Next.js (plugin will handle routing)
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
