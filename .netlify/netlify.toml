@@ -1,0 +1,35 @@
+functionsDirectory = "/Users/eliasmukasa/homelift-landing/netlify/functions"
+functionsDirectoryOrigin = "config-v1"
+headers = []
+redirects = []
+
+[functions]
+
+[functions."*"]
+
+[[plugins]]
+origin = "default"
+package = "@netlify/plugin-nextjs"
+
+[plugins.inputs]
+
+[build]
+publish = "/Users/eliasmukasa/homelift-landing"
+publishOrigin = "ui"
+commandOrigin = "config"
+command = "# no build command"
+functions = "/Users/eliasmukasa/homelift-landing/netlify/functions"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
