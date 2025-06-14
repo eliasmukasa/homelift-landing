@@ -4,8 +4,8 @@ import { useState } from "react";
 import ApplyModal from "../components/ApplyModal";
 
 // 🔗 Airtable embed URLs
-const HH_FORM_URL  = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH?hide_title=true";
-const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX?hide_title=true";
+const HH_FORM_URL  = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH/form";
+const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX/form";
 
 export default function LandingPage() {
   const [openForm, setOpenForm] = useState<"none" | "hh" | "hcp">("none");
