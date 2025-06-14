@@ -1,58 +1,65 @@
 "use client";
-// app/page.tsx (or wherever your LandingPage lives)
+
 import { useState } from "react";
+import { motion, useViewportScroll, useTransform } from "framer-motion";
 import ApplyModal from "../components/ApplyModal";
 
-// 🔗 Airtable embed URLs
-const HH_FORM_URL  = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH/form";
-const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX/form";
+const HH_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH/form?hide_title=true&backgroundColor=grey";
+const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX/form?hide_title=true&backgroundColor=grey";
 
 export default function LandingPage() {
   const [openForm, setOpenForm] = useState<"none" | "hh" | "hcp">("none");
+  const { scrollY } = useViewportScroll();
+  const yOffset = useTransform(scrollY, [0, 600], [0, 200]);
+  const activeFormUrl = openForm === "hh" ? HH_FORM_URL : HCP_FORM_URL;
+  const isModalOpen = openForm !== "none";
   const year = new Date().getFullYear();
 
-  // choose which URL to pass into the modal
-  const activeFormUrl = openForm === "hh" ? HH_FORM_URL : HCP_FORM_URL;
-  const isModalOpen  = openForm !== "none";
-
   return (
-    <main className="bg-black text-white font-sans relative overflow-x-hidden">
-      {/* ─── Hero ─── */}
-      <section
-        className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-cover bg-center"
-        style={{ backgroundImage: "url('/sofa-hero.jpg')" }}
+    <motion.main className="bg-black text-white font-sans relative overflow-x-hidden">
+      {/* ─────────────────────────── Parallax Hero ─────────────────────────── */}
+      <motion.section
+        style={{
+          backgroundImage: "url('/sofa-hero.jpg')",
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
+          backgroundPositionY: yOffset,
+        }}
+        className="min-h-screen flex flex-col items-center justify-center px-6 text-center"
       >
         <h1 className="text-5xl md:text-6xl font-extrabold max-w-3xl leading-tight">
           Your home, <span className="text-blue-400">lifted.</span>
         </h1>
-        <p className="mt-6 max-w-xl text-xl md:text-2xl text-white/90
-        bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 inline-block">
-          Vetted and continuously trained Home-Care Professionals — matched to your
-          household in under 48 hours.
+        <p className="mt-6 max-w-xl text-xl md:text-2xl text-white/90 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 inline-block">
+          Vetted, insured, and continuously trained Home-Care Professionals — matched to your household in under 48 hours.
         </p>
-
         <div className="mt-10 flex flex-col sm:flex-row gap-4">
           <button
+            type="button"
             onClick={() => setOpenForm("hh")}
-            className="bg-blue-600 hover:bg-blue-500 transition rounded-2xl px-6 py-3 font-semibold shadow-lg"
+            className="bg-blue-600 hover:bg-blue-500 transition rounded-xl px-6 py-3 font-semibold shadow-lg"
           >
             🏠 Get Early Access
           </button>
           <button
+            type="button"
             onClick={() => setOpenForm("hcp")}
-            className="bg-green-600 hover:bg-green-500 transition rounded-2xl px-6 py-3 font-semibold shadow-lg"
+            className="bg-green-600 hover:bg-green-500 transition rounded-xl px-6 py-3 font-semibold shadow-lg"
           >
             👩‍🍳 Apply as HCP
           </button>
         </div>
-      </section>
+      </motion.section>
 
-      {/* ─── Injected Modal ─── */}
-      <ApplyModal
-        formUrl={activeFormUrl}
-        isOpen={isModalOpen}
-        onClose={() => setOpenForm("none")}
-      />
+      {/* ───────────────── Modal Form Embed ───────────────── */}
+      {isModalOpen && (
+        <ApplyModal
+          formUrl={activeFormUrl}
+          isOpen={isModalOpen}
+          onClose={() => setOpenForm("none")}
+        />
+      )}
 
       {/* ───────────── Early-bird benefits (HH & HCP) ───────────── */}
       <section className="max-w-6xl mx-auto py-16 px-6 grid md:grid-cols-2 gap-10">
@@ -151,12 +158,9 @@ export default function LandingPage() {
       <footer className="bg-gray-950 py-10 text-center text-gray-500 text-sm">
         <p>© {year} HomeLift Africa. All rights reserved.</p>
         <p className="mt-1">
-          Questions?{" "}
-          <a href="https://wa.me/256700000000" className="underline">
-            Chat on WhatsApp
-          </a>
+          Questions? <a href="https://wa.me/256700000000" className="underline">Chat on WhatsApp</a>
         </p>
       </footer>
-    </main>
+    </motion.main>
   );
 }
