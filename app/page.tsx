@@ -25,8 +25,9 @@ export default function LandingPage() {
         <h1 className="text-5xl md:text-6xl font-extrabold max-w-3xl leading-tight">
           Your home, <span className="text-blue-400">lifted.</span>
         </h1>
-        <p className="mt-6 max-w-xl text-xl md:text-2xl text-white/90">
-          Vetted, insured, and continuously trained Home-Care Professionals — matched to your
+        <p className="mt-6 max-w-xl text-xl md:text-2xl text-white/90
+        bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 inline-block">
+          Vetted and continuously trained Home-Care Professionals — matched to your
           household in under 48 hours.
         </p>
 
