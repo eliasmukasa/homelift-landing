@@ -16,7 +16,9 @@ export default function LandingPage() {
   const year = new Date().getFullYear();
 
   return (
-    <motion.main className="bg-black text-white font-sans relative overflow-x-hidden">
+    <motion.main className="text-white font-sans relative overflow-x-hidden bg-fixed bg-cover bg-center"
+      style={{ backgroundImage: "url('/sofa-hero.jpg')" }}
+      >
       {/* ─────────────────────────── Parallax Hero ─────────────────────────── */}
       <motion.section
         style={{
