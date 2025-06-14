@@ -1,16 +1,23 @@
+"use client";
+// app/page.tsx (or wherever your LandingPage lives)
 import { useState } from "react";
+import ApplyModal from "../components/ApplyModal";
 
-// 🔗 Replace these with your Airtable *embed* URLs (not the public form links)
-const HH_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH/form";
-const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX/form";
+// 🔗 Airtable embed URLs
+const HH_FORM_URL  = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH?hide_title=true";
+const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX?hide_title=true";
 
 export default function LandingPage() {
   const [openForm, setOpenForm] = useState<"none" | "hh" | "hcp">("none");
   const year = new Date().getFullYear();
 
+  // choose which URL to pass into the modal
+  const activeFormUrl = openForm === "hh" ? HH_FORM_URL : HCP_FORM_URL;
+  const isModalOpen  = openForm !== "none";
+
   return (
     <main className="bg-black text-white font-sans relative overflow-x-hidden">
-      {/* ─────────────────────────── Hero ─────────────────────────── */}
+      {/* ─── Hero ─── */}
       <section
         className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-cover bg-center"
         style={{ backgroundImage: "url('/sofa-hero.jpg')" }}
@@ -18,7 +25,6 @@ export default function LandingPage() {
         <h1 className="text-5xl md:text-6xl font-extrabold max-w-3xl leading-tight">
           Your home, <span className="text-blue-400">lifted.</span>
         </h1>
-
         <p className="mt-6 max-w-xl text-lg text-gray-300">
           Vetted, insured, and continuously trained Home-Care Professionals — matched to your
           household in under 48 hours.
@@ -27,38 +33,25 @@ export default function LandingPage() {
         <div className="mt-10 flex flex-col sm:flex-row gap-4">
           <button
             onClick={() => setOpenForm("hh")}
-            className="bg-blue-600 hover:bg-blue-500 transition rounded-xl px-6 py-3 font-semibold shadow-lg"
+            className="bg-blue-600 hover:bg-blue-500 transition rounded-2xl px-6 py-3 font-semibold shadow-lg"
           >
             🏠 Get Early Access
           </button>
           <button
             onClick={() => setOpenForm("hcp")}
-            className="bg-green-600 hover:bg-green-500 transition rounded-xl px-6 py-3 font-semibold shadow-lg"
+            className="bg-green-600 hover:bg-green-500 transition rounded-2xl px-6 py-3 font-semibold shadow-lg"
           >
             👩‍🍳 Apply as HCP
           </button>
         </div>
       </section>
 
-      {/* ───────────────── Modal Form Embed ───────────────── */}
-      {openForm !== "none" && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="relative w-full max-w-3xl h-[80vh] bg-gray-900 rounded-2xl shadow-xl overflow-hidden">
-            <button
-              aria-label="Close form"
-              className="absolute top-3 right-3 text-gray-400 hover:text-white text-2xl"
-              onClick={() => setOpenForm("none")}
-            >
-              ×
-            </button>
-            <iframe
-              title="Airtable form"
-              src={openForm === "hh" ? HH_FORM_URL : HCP_FORM_URL}
-              className="w-full h-full border-0"
-            />
-          </div>
-        </div>
-      )}
+      {/* ─── Injected Modal ─── */}
+      <ApplyModal
+        formUrl={activeFormUrl}
+        isOpen={isModalOpen}
+        onClose={() => setOpenForm("none")}
+      />
 
       {/* ───────────── Early-bird benefits (HH & HCP) ───────────── */}
       <section className="max-w-6xl mx-auto py-16 px-6 grid md:grid-cols-2 gap-10">
@@ -157,7 +150,7 @@ export default function LandingPage() {
       <footer className="bg-gray-950 py-10 text-center text-gray-500 text-sm">
         <p>© {year} HomeLift Africa. All rights reserved.</p>
         <p className="mt-1">
-          Questions? {" "}
+          Questions?{" "}
           <a href="https://wa.me/256700000000" className="underline">
             Chat on WhatsApp
           </a>
