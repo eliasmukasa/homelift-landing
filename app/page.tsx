@@ -84,7 +84,7 @@ export default function LandingPage() {
       </section>
 
       {/* ──────────────────── How it works ──────────────────── */}
-      <section className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
+      <section className="bg-black/60 backdrop-blur-sm py-16 px-6 text-center">
         <h2 className="text-3xl font-bold mb-12">How HomeLift Works</h2>
         <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-8">
           {[
@@ -117,7 +117,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────── Founder story placeholder ─────────────── */}
-      <section className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
+      <section className="bg-black/70 backdrop-blur-sm py-16 px-6 text-center">
         <h2 className="text-3xl font-bold mb-6">Meet the Founders</h2>
         <p className="text-gray-300 mb-8 max-w-2xl mx-auto">
           Watch a quick 60-second story on why Florence & Elias are on a mission to lift the quality of home life in Africa.
@@ -129,7 +129,7 @@ export default function LandingPage() {
       </section>
 
       {/* ───────────────── Testimonials ───────────────── */}
-      <section className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
+      <section className="bg-black/80 backdrop-blur-sm py-16 px-6 text-center">
         <h2 className="text-3xl font-bold text-center mb-12">Early Customers Feedback</h2>
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
           {[1, 2].map((id) => (
@@ -144,13 +144,13 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────────────── FAQ ─────────────────────── */}
-      <section className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
+      <section className="bg-black/90 backdrop-blur-sm py-16 px-6 text-center">
         <h2 className="text-3xl font-bold text-center mb-12">FAQs</h2>
-        <details className="bg-gray-900 rounded-xl p-4 mb-4 cursor-pointer">
+        <details className="bg-black-90 rounded-xl p-4 mb-4 cursor-pointer">
           <summary className="font-medium">How are HCPs vetted?</summary>
           <p className="text-gray-400 mt-2">We verify police clearance, NIN, and run reference checks.</p>
         </details>
-        <details className="bg-gray-900 rounded-xl p-4 mb-4 cursor-pointer">
+        <details className="bg-black-90 rounded-xl p-4 mb-4 cursor-pointer">
           <summary className="font-medium">What if I’m not happy with the match?</summary>
           <p className="text-gray-400 mt-2">We offer a free replacement within 48 hours of notice.</p>
         </details>
