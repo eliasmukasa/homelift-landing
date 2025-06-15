@@ -102,8 +102,8 @@ const ApplyModal = ({ formUrl, isOpen, onClose }: ApplyModalProps) => {
 };
 
 // Airtable embed URLs (replace with your actual public share links from a supported layout!)
-const HH_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH/form";
-const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX/form";
+const HH_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH?hide_title=true&backgroundColor=grey";
+const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX?hide_title=true&backgroundColor=grey";
 
 export default function LandingPage() {
   const [openForm, setOpenForm] = useState("none");
