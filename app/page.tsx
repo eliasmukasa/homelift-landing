@@ -176,7 +176,7 @@ export default function LandingPage() {
       <motion.section 
         ref={heroRef}
         className="relative h-screen flex flex-col items-center justify-center text-center bg-fixed bg-cover bg-center snap-start"
-        style={{ backgroundImage: "url('https://placehold.co/1920x1080/0A192F/E0E0E0?text=HomeLift+Africa+Hero+Image')", backgroundPositionY: heroYOffset }}
+        style={{ backgroundImage: "url('https://res.cloudinary.com/dtrnpryf8/image/upload/v1749953728/sofa-hero_sq26dq.png')", backgroundPositionY: heroYOffset }}
       >
         <motion.h1
           initial={{ opacity: 0, y: -50 }}
