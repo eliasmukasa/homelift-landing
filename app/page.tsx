@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, useViewportScroll, useTransform } from "framer-motion";
 import ApplyModal from "../components/ApplyModal";
 
+// Airtable embed URLs
 const HH_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH/form";
 const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX/form";
 
@@ -16,19 +17,14 @@ export default function LandingPage() {
   const year = new Date().getFullYear();
 
   return (
-    <motion.main className="text-white font-sans relative overflow-x-hidden bg-fixed bg-cover bg-center"
-      style={{ backgroundImage: "url('/sofa-hero.jpg')" }}
-      >
-      {/* ─────────────────────────── Parallax Hero ─────────────────────────── */}
+    <main className="font-sans text-white h-screen overflow-y-scroll snap-y snap-mandatory">
+      {/* Hero Section with parallax */}
       <motion.section
+        className="relative h-screen snap-start flex flex-col items-center justify-center text-center bg-fixed bg-cover bg-center"
         style={{
           backgroundImage: "url('/sofa-hero.jpg')",
-          backgroundSize: 'cover',
-          backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed',
           backgroundPositionY: yOffset,
         }}
-        className="min-h-screen flex flex-col items-center justify-center px-6 text-center"
       >
         <h1 className="text-5xl md:text-6xl font-extrabold max-w-3xl leading-tight">
           Your home, <span className="text-blue-400">lifted.</span>
@@ -54,7 +50,7 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* ───────────────── Modal Form Embed ───────────────── */}
+      {/* Modal Embed */}
       {isModalOpen && (
         <ApplyModal
           formUrl={activeFormUrl}
@@ -63,106 +59,104 @@ export default function LandingPage() {
         />
       )}
 
-      {/* ───────────── Early-bird benefits (HH & HCP) ───────────── */}
-      <section className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
-        <div>
-          <h2 className="text-2xl font-bold mb-4">Early-Bird Benefits for Households</h2>
-          <ul className="space-y-3 text-gray-300 list-disc list-inside">
-            <li>Free replacement in first 30 days</li>
-            <li>UGX 200 K launch credit</li>
-            <li>Priority 48-hr matching</li>
-          </ul>
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold mb-4">Early-Bird Benefits for HCPs</h2>
-          <ul className="space-y-3 text-gray-300 list-disc list-inside">
-            <li>Free core-skills training</li>
-            <li>Weekly MoMo payout</li>
-            <li>Career growth & certification</li>
-          </ul>
+      {/* Benefits Section */}
+      <section className="relative h-screen snap-start bg-black/50 backdrop-blur-sm flex items-center justify-center p-6">
+        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-10">
+          <div>
+            <h2 className="text-3xl font-bold mb-4">Benefits for Households</h2>
+            <ul className="space-y-3 text-gray-300 list-disc list-inside">
+              <li>Free replacement in first 30 days</li>
+              <li>UGX 200 K launch credit</li>
+              <li>Priority 48-hr matching</li>
+            </ul>
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold mb-4">Benefits for HCPs</h2>
+            <ul className="space-y-3 text-gray-300 list-disc list-inside">
+              <li>Free core-skills training</li>
+              <li>Weekly MoMo payout</li>
+              <li>Career growth & certification</li>
+            </ul>
+          </div>
         </div>
       </section>
 
-      {/* ──────────────────── How it works ──────────────────── */}
-      <section className="bg-black/60 backdrop-blur-sm py-16 px-6 text-center">
-        <h2 className="text-3xl font-bold mb-12">How HomeLift Works</h2>
-        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-8">
+      {/* How It Works Section with sticky content */}
+      <section className="relative h-screen snap-start bg-black/60 backdrop-blur-sm overflow-hidden">
+        <motion.div className="sticky top-1/4 max-w-3xl mx-auto text-center space-y-6 px-6"
+          style={{
+            opacity: useTransform(scrollY, [window.innerHeight, window.innerHeight + 200], [0, 1]),
+            y: useTransform(scrollY, [window.innerHeight, window.innerHeight + 200], [50, 0]),
+          }}
+        >
+          <h2 className="text-4xl font-bold">How HomeLift Works</h2>
+          <div className="grid md:grid-cols-3 gap-8 mt-6">
+            {[
+              { icon: '📝', title: 'Your needs', desc: 'Tell us what you require.' },
+              { icon: '🤝', title: 'Quality match', desc: 'We pick your best-fit HCPs.' },
+              { icon: '📞', title: 'Ongoing care', desc: 'Support via WhatsApp 24/7.' },
+            ].map((item) => (
+              <div key={item.title} className="bg-gray-800 p-6 rounded-2xl shadow-lg flex flex-col items-center">
+                <span className="text-5xl mb-4">{item.icon}</span>
+                <h3 className="font-semibold text-xl mb-2">{item.title}</h3>
+                <p className="text-gray-400 text-sm text-center">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Founders Section */}
+      <section className="relative h-screen snap-start bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-3xl space-y-4">
+          <h2 className="text-4xl font-bold">Meet the Founders</h2>
+          <p className="text-gray-300">Florence & Elias share their vision in 60 seconds.</p>
+          <div className="aspect-w-16 aspect-h-9 bg-gray-800 rounded-2xl flex items-center justify-center text-gray-500">
+            Video placeholder
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="relative h-screen snap-start bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+        <div className="max-w-4xl space-y-8 text-center">
+          <h2 className="text-4xl font-bold">Early Feedback</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            {[1,2].map((i) => (
+              <div key={i} className="bg-gray-800 p-6 rounded-2xl">
+                <p className="italic text-gray-300">“HomeLift matched us in 24h and amazing service!”</p>
+                <p className="mt-4 font-semibold">– Beta User {i}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="relative h-screen snap-start bg-black/90 backdrop-blur-sm flex items-start justify-center p-6">
+        <div className="max-w-3xl space-y-4">
+          <h2 className="text-4xl font-bold text-center">FAQs</h2>
           {[
-            {
-              title: "Tell us your needs",
-              icon: "📝",
-              desc: "Fill our quick form with your household requirements.",
-            },
-            {
-              title: "We match vetted HCPs",
-              icon: "🤝",
-              desc: "Our algorithm and team pick the best-fit professionals.",
-            },
-            {
-              title: "Ongoing concierge support",
-              icon: "📞",
-              desc: "Swap, upgrade, or get help via WhatsApp 24/7.",
-            },
-          ].map((s) => (
-            <div
-              key={s.title}
-              className="bg-gray-800 p-6 rounded-2xl shadow-lg flex flex-col items-center"
-            >
-              <span className="text-4xl mb-4">{s.icon}</span>
-              <h3 className="font-semibold text-xl mb-2">{s.title}</h3>
-              <p className="text-gray-400 text-sm text-center">{s.desc}</p>
-            </div>
+            { q: 'How are HCPs vetted?', a: 'Police clearance, NIN & refs.' },
+            { q: 'Unhappy with match?', a: 'Free replacement within 48h.' },
+          ].map(({q,a}) => (
+            <details key={q} className="bg-black/80 rounded-xl p-4 cursor-pointer text-gray-300">
+              <summary className="font-medium">{q}</summary>
+              <p className="mt-2 text-gray-400">{a}</p>
+            </details>
           ))}
         </div>
       </section>
 
-      {/* ─────────────── Founder story placeholder ─────────────── */}
-      <section className="bg-black/70 backdrop-blur-sm py-16 px-6 text-center">
-        <h2 className="text-3xl font-bold mb-6">Meet the Founders</h2>
-        <p className="text-gray-300 mb-8 max-w-2xl mx-auto">
-          Watch a quick 60-second story on why Florence & Elias are on a mission to lift the quality of home life in Africa.
-        </p>
-        <div className="aspect-w-16 aspect-h-9 max-w-3xl mx-auto bg-gray-800 rounded-2xl flex items-center justify-center text-gray-500">
-          {/* Replace with real video embed */}
-          Video placeholder
+      {/* Footer (sticky bottom) */}
+      <footer className="relative h-screen snap-end bg-black/50 backdrop-blur-sm flex items-center justify-center p-6 text-center text-gray-400">  
+        <div className="space-y-2">
+          <p>© {year} HomeLift Africa. All rights reserved.</p>
+          <p>
+            Questions? <a href="https://wa.me/256700000000" className="underline">Chat on WhatsApp</a>
+          </p>
         </div>
-      </section>
-
-      {/* ───────────────── Testimonials ───────────────── */}
-      <section className="bg-black/80 backdrop-blur-sm py-16 px-6 text-center">
-        <h2 className="text-3xl font-bold text-center mb-12">Early Customers Feedback</h2>
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
-          {[1, 2].map((id) => (
-            <div key={id} className="bg-gray-800 p-6 rounded-2xl">
-              <p className="italic text-gray-300">
-                “Placeholder quote – HomeLift matched us with a fantastic housekeeper within 24 hours!”
-              </p>
-              <p className="mt-4 font-semibold">– Kampala Beta User</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ─────────────────────── FAQ ─────────────────────── */}
-      <section className="bg-black/90 backdrop-blur-sm py-16 px-6 text-center">
-        <h2 className="text-3xl font-bold text-center mb-12">FAQs</h2>
-        <details className="bg-black-90 rounded-xl p-4 mb-4 cursor-pointer">
-          <summary className="font-medium">How are HCPs vetted?</summary>
-          <p className="text-gray-400 mt-2">We verify police clearance, NIN, and run reference checks.</p>
-        </details>
-        <details className="bg-black-90 rounded-xl p-4 mb-4 cursor-pointer">
-          <summary className="font-medium">What if I’m not happy with the match?</summary>
-          <p className="text-gray-400 mt-2">We offer a free replacement within 48 hours of notice.</p>
-        </details>
-      </section>
-
-      {/* ────────────────────── Footer ────────────────────── */}
-      <footer className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
-        <p>© {year} HomeLift Africa. All rights reserved.</p>
-        <p className="mt-1">
-          Questions? <a href="https://wa.me/256700000000" className="underline">Chat on WhatsApp</a>
-        </p>
       </footer>
-    </motion.main>
+    </main>
   );
 }
