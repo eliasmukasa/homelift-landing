@@ -142,12 +142,12 @@ export default function LandingPage() {
   const howItWorksY = useTransform(howItWorksScrollProgress, [0.1, 0.5], [100, 0]); // Example for title/grid container
 
   // Animation for Founders Section
-  const { scrollYProgress: foundersScrollProgress } = useScroll({
-    target: foundersRef,
-    offset: ["start end", "end start"]
-  });
-  const foundersOpacity = useTransform(foundersScrollProgress, [0.1, 0.5, 0.8, 1], [0, 1, 1, 0]);
-  const foundersX = useTransform(foundersScrollProgress, [0.1, 0.5], [-100, 0]);
+  // const { scrollYProgress: foundersScrollProgress } = useScroll({
+  //   target: foundersRef,
+  //   offset: ["start end", "end start"]
+  // });
+  // const foundersOpacity = useTransform(foundersScrollProgress, [0.1, 0.5, 0.8, 1], [0, 1, 1, 0]);
+  // const foundersX = useTransform(foundersScrollProgress, [0.1, 0.5], [-100, 0]);
 
   // Animation for Testimonials Section
   const { scrollYProgress: testimonialsScrollProgress } = useScroll({
@@ -282,33 +282,6 @@ export default function LandingPage() {
                 <p className="text-gray-400 text-base text-center">{item.desc}</p>
               </motion.div>
             ))}
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Founders Section - slide in from left */}
-      <motion.section
-        ref={foundersRef}
-        style={{ opacity: foundersOpacity, x: foundersX }}
-        className="relative min-h-screen bg-gradient-to-br from-gray-900 to-black flex flex-col items-center justify-center p-8 text-center snap-start"
-      >
-        <div className="max-w-4xl space-y-6 bg-gray-800/60 rounded-3xl shadow-xl p-8 border border-gray-700">
-          <h2 className="text-4xl md:text-5xl font-bold text-white drop-shadow-md">Meet the Visionaries Behind HomeLift Africa</h2>
-          <p className="text-gray-300 text-xl">
-            Florence & Elias share their passion and the driving force behind HomeLift Africa.
-            Hear their story in this brief introduction.
-          </p>
-          <div className="relative aspect-video w-full max-w-2xl mx-auto bg-gray-700 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center text-gray-500 text-lg">
-            {/* Replace with your actual YouTube or Vimeo embed */}
-            <iframe
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ?controls=0&modestbranding=1" // Placeholder: Rick Astley
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute top-0 left-0 w-full h-full"
-              title="HomeLift Africa Founders Vision"
-            ></iframe>
-            {/* Optional: Add a play button overlay if autoplay is off */}
           </div>
         </div>
       </motion.section>
