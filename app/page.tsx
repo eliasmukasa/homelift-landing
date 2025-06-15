@@ -275,14 +275,14 @@ export default function LandingPage() {
             onClick={() => setOpenForm("hh")}
             className="hidden sm:inline-block bg-blue-600 hover:bg-blue-500 transition duration-300 rounded-xl px-4 py-2 font-bold text-sm shadow-md"
           >
-            🏠 Get Early Access
+            Get Early Access
           </button>
           <button
             type="button"
             onClick={() => setOpenForm("hcp")}
             className="hidden sm:inline-block bg-green-600 hover:bg-green-500 transition duration-300 rounded-xl px-4 py-2 font-bold text-sm shadow-md"
           >
-            👩‍🍳 Apply as HCP
+            Apply as HCP
           </button>
         </div>
       </motion.header>
@@ -339,14 +339,14 @@ export default function LandingPage() {
               onClick={() => setOpenForm("hh")}
               className="bg-blue-600 hover:bg-blue-500 transition duration-300 rounded-xl px-8 py-4 font-bold text-lg shadow-lg transform hover:scale-105"
             >
-              🏠 Get Early Access
+              Get Early Access
             </button>
             <button
               type="button"
               onClick={() => setOpenForm("hcp")}
               className="bg-green-600 hover:bg-green-500 transition duration-300 rounded-xl px-8 py-4 font-bold text-lg shadow-lg transform hover:scale-105"
             >
-              👩‍🍳 Apply as HCP
+              Apply as HCP
             </button>
           </motion.div>
         </motion.section>
@@ -541,14 +541,14 @@ export default function LandingPage() {
               onClick={() => setOpenForm("hh")}
               className="bg-blue-600 hover:bg-blue-500 transition duration-300 rounded-xl px-10 py-5 font-bold text-xl shadow-lg transform hover:scale-105"
             >
-              🏠 Find Your HCP
+              Find Your HCP
             </button>
             <button
               type="button"
               onClick={() => setOpenForm("hcp")}
               className="bg-green-600 hover:bg-green-500 transition duration-300 rounded-xl px-10 py-5 font-bold text-xl shadow-lg transform hover:scale-105"
             >
-              👩‍🍳 Start Your Career
+              Start Your Career
             </button>
           </motion.div>
         </section>
