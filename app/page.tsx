@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"; // Added AnimatePresence
-import { createPortal } from "react-dom"; // For better modal management
-import { XMarkIcon, CheckCircleIcon } from "@heroicons/react/24/outline"; // For modal close icon
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
+import { XMarkIcon, CheckCircleIcon } from "@heroicons/react/24/outline"; // Corrected import for XMarkIcon
 
-// --- ApplyModal Component (moved here for self-contained immersive) ---
+// --- ApplyModal Component (for self-contained immersive) ---
 type ApplyModalProps = {
   formUrl: string;
   isOpen: boolean;
@@ -23,7 +23,6 @@ const ApplyModal = ({ formUrl, isOpen, onClose }: ApplyModalProps) => {
     }
   }, [isOpen]);
 
-  // Handle iframe load
   const handleIframeLoad = () => {
     setIsLoading(false);
     setLoadError(false);
@@ -43,7 +42,7 @@ const ApplyModal = ({ formUrl, isOpen, onClose }: ApplyModalProps) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-      onClick={onClose} // Close when clicking outside
+      onClick={onClose}
     >
       <motion.div
         initial={{ scale: 0.9, y: 50 }}
@@ -51,9 +50,10 @@ const ApplyModal = ({ formUrl, isOpen, onClose }: ApplyModalProps) => {
         exit={{ scale: 0.9, y: 50 }}
         transition={{ type: "spring", stiffness: 200, damping: 25 }}
         className="relative bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl h-[90vh] flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()} // Prevent modal from closing when clicking inside
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-4 border-b border-gray-700">
+        {/* Removed the header div below */}
+        {/* <div className="flex justify-between items-center p-4 border-b border-gray-700">
           <h2 className="text-xl font-bold text-white">
             {formUrl.includes("hh") ? "Household Inquiry" : "HCP Application"}
           </h2>
@@ -64,7 +64,7 @@ const ApplyModal = ({ formUrl, isOpen, onClose }: ApplyModalProps) => {
           >
             <XMarkIcon className="h-6 w-6 text-gray-400" />
           </button>
-        </div>
+        </div> */}
         <div className="flex-grow relative">
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white">
@@ -102,103 +102,138 @@ const ApplyModal = ({ formUrl, isOpen, onClose }: ApplyModalProps) => {
 };
 
 // Airtable embed URLs (replace with your actual public share links from a supported layout!)
-const HH_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH?hide_title=true&backgroundColor=grey";
-const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX?hide_title=true&backgroundColor=grey";
+const HH_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH?hide_title=true&backgroundColor=grey&view_controls=off";
+const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX?hide_title=true&backgroundColor=grey&view_controls=off";
 
 export default function LandingPage() {
   const [openForm, setOpenForm] = useState("none");
   const activeFormUrl = openForm === "hh" ? HH_FORM_URL : HCP_FORM_URL;
+  const year = new Date().getFullYear();
 
-  // Refs for each section to track scroll progress
+  // Master scroll progress for the entire page
+  const mainRef = useRef(null);
+  const { scrollYProgress: mainScrollYProgress } = useScroll({ target: mainRef });
+
+  // Refs for each section for more precise control
   const heroRef = useRef(null);
   const benefitsRef = useRef(null);
   const howItWorksRef = useRef(null);
-  const foundersRef = useRef(null);
+  // Removed foundersRef
   const testimonialsRef = useRef(null);
   const faqRef = useRef(null);
   const footerRef = useRef(null);
 
-  // Global scroll Y progress (for full page effects, if any)
-  const { scrollYProgress: globalScrollYProgress } = useScroll();
+  // --- GLOBAL BACKGROUND PARALLAX ---
+  // Background image scrolls slowly
+  const backgroundY = useTransform(mainScrollYProgress, [0, 1], ['0%', '20%']); // Image moves 20% of scroll height
+  // The 'background' effect on sections themselves
+  // This opacity applies to the black/blur overlay that covers the fixed background image
+  const sectionBgOpacity = useTransform(mainScrollYProgress, [0, 0.15, 0.85, 1], [0.1, 0.7, 0.8, 0.9]); // Increased start opacity, smoother ramp
 
-  // Hero Section Parallax - still works well globally
-  const heroYOffset = useTransform(globalScrollYProgress, [0, 0.5], ['0%', '50%']); // Adjust range as needed
+  // --- HERO SECTION (Sticky/Parallax) ---
+  const { scrollYProgress: heroScrollProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"] // Pin the hero section as long as its bottom is within view
+  });
 
-  // Animation for Benefits Section
+  // Hero content fades out and moves up as it pins
+  const heroContentOpacity = useTransform(heroScrollProgress, [0, 0.5], [1, 0]);
+  const heroContentY = useTransform(heroScrollProgress, [0, 0.5], ['0%', '-50%']); // Content moves up faster
+
+  // --- BENEFITS SECTION (Fade/Slide in from below, over the background) ---
   const { scrollYProgress: benefitsScrollProgress } = useScroll({
     target: benefitsRef,
-    offset: ["start end", "end start"] // When target starts entering, when it finishes exiting
+    offset: ["start end", "center center"] // Starts animating when section enters view, ends when center hits center
   });
-  const benefitsOpacity = useTransform(benefitsScrollProgress, [0.2, 0.6, 0.8, 1], [0, 1, 1, 0]); // Fade in, stay, fade out
-  const benefitsY = useTransform(benefitsScrollProgress, [0.2, 0.6], [50, 0]); // Slide up
+  const benefitsOpacity = useTransform(benefitsScrollProgress, [0, 0.5], [0, 1]);
+  const benefitsY = useTransform(benefitsScrollProgress, [0, 0.5], [100, 0]);
+  const benefitsScale = useTransform(benefitsScrollProgress, [0, 0.5], [0.9, 1]);
 
-  // Animation for How It Works Section
+  // --- HOW IT WORKS SECTION (Cards reveal with staggered effect) ---
   const { scrollYProgress: howItWorksScrollProgress } = useScroll({
     target: howItWorksRef,
-    offset: ["start end", "end start"]
+    offset: ["start end", "center center"]
   });
-  const howItWorksOpacity = useTransform(howItWorksScrollProgress, [0.1, 0.5, 0.8, 1], [0, 1, 1, 0]);
-  const howItWorksScale = useTransform(howItWorksScrollProgress, [0.1, 0.5], [0.8, 1]);
-  const howItWorksY = useTransform(howItWorksScrollProgress, [0.1, 0.5], [100, 0]); // Example for title/grid container
+  const howItWorksOpacity = useTransform(howItWorksScrollProgress, [0, 0.5], [0, 1]);
+  const howItWorksY = useTransform(howItWorksScrollProgress, [0, 0.5], [100, 0]);
 
-  // Animation for Founders Section
+  // Removed Founders section animation variables
   // const { scrollYProgress: foundersScrollProgress } = useScroll({
   //   target: foundersRef,
-  //   offset: ["start end", "end start"]
+  //   offset: ["start end", "center center"]
   // });
-  // const foundersOpacity = useTransform(foundersScrollProgress, [0.1, 0.5, 0.8, 1], [0, 1, 1, 0]);
-  // const foundersX = useTransform(foundersScrollProgress, [0.1, 0.5], [-100, 0]);
+  // const foundersOpacity = useTransform(foundersScrollProgress, [0, 0.5], [0, 1]);
+  // const foundersScale = useTransform(foundersScrollProgress, [0, 0.5], [0.7, 1]);
 
-  // Animation for Testimonials Section
+  // --- TESTIMONIALS SECTION (Cards slide in from sides) ---
   const { scrollYProgress: testimonialsScrollProgress } = useScroll({
     target: testimonialsRef,
-    offset: ["start end", "end start"]
+    offset: ["start end", "center center"]
   });
-  const testimonialsOpacity = useTransform(testimonialsScrollProgress, [0.1, 0.5, 0.8, 1], [0, 1, 1, 0]);
-  const testimonialCard1X = useTransform(testimonialsScrollProgress, [0.1, 0.5], [-100, 0]);
-  const testimonialCard2X = useTransform(testimonialsScrollProgress, [0.1, 0.5], [100, 0]);
+  const testimonialsOpacity = useTransform(testimonialsScrollProgress, [0, 0.5], [0, 1]);
+  const testimonialCard1X = useTransform(testimonialsScrollProgress, [0, 0.5], [-200, 0]);
+  const testimonialCard2X = useTransform(testimonialsScrollProgress, [0, 0.5], [200, 0]);
 
-  // Animation for FAQ Section
+  // --- FAQ SECTION (Accordion reveal) ---
   const { scrollYProgress: faqScrollProgress } = useScroll({
     target: faqRef,
-    offset: ["start end", "end start"]
+    offset: ["start end", "center center"]
   });
-  const faqOpacity = useTransform(faqScrollProgress, [0.1, 0.5], [0, 1]);
-  const faqY = useTransform(faqScrollProgress, [0.1, 0.5], [50, 0]);
+  const faqOpacity = useTransform(faqScrollProgress, [0, 0.5], [0, 1]);
+  const faqY = useTransform(faqScrollProgress, [0, 0.5], [50, 0]);
 
-
-  const year = new Date().getFullYear();
 
   return (
-    // Removed snap-mandatory from main to allow smoother scrolling, kept snap-start on sections for guided flow
-    <main className="font-sans text-white min-h-screen overflow-x-hidden">
-      {/* Hero Section with parallax */}
-      <motion.section 
+    // Main container with fixed background and sticky mechanism
+    <main
+      ref={mainRef}
+      className="font-sans text-white min-h-[450vh] overflow-x-hidden relative" // Increased min-height for more scroll
+    >
+      {/* Fixed Background Image */}
+      <motion.div
+        className="fixed inset-0 bg-cover bg-center -z-10" // -z-10 to stay behind content
+        style={{
+          backgroundImage: "url('https://res.cloudinary.com/dtrnpryf8/image/upload/v1749953728/sofa-hero_sq26dq.png')", // Cloudinary URL
+          backgroundPositionY: backgroundY, // Apply parallax to fixed background
+        }}
+      ></motion.div>
+
+      {/* Hero Section - Pinned and content animates */}
+      <motion.section
         ref={heroRef}
-        className="relative h-screen flex flex-col items-center justify-center text-center bg-fixed bg-cover bg-center snap-start"
-        style={{ backgroundImage: "url('https://res.cloudinary.com/dtrnpryf8/image/upload/v1749953728/sofa-hero_sq26dq.png')", backgroundPositionY: heroYOffset }}
+        className="sticky top-0 h-screen flex flex-col items-center justify-center text-center p-8 z-0"
+        style={{
+          // We apply a subtle gradient background to sections to ensure continuity and avoid hard cuts
+          // This background can blur / fade in as the section scrolls
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.8))',
+          backdropFilter: 'blur(5px)', // Initial blur for hero over fixed background
+          WebkitBackdropFilter: 'blur(5px)', // Safari support
+        }}
       >
         <motion.h1
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
+          style={{ opacity: heroContentOpacity, y: heroContentY }} // Animates with scroll
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="text-5xl md:text-6xl font-extrabold max-w-3xl leading-tight drop-shadow-lg"
+          className="text-5xl md:text-7xl font-extrabold max-w-4xl leading-tight drop-shadow-lg z-10"
         >
           Your home, <span className="text-blue-400">lifted.</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-          className="mt-6 max-w-xl text-xl md:text-2xl text-white/90 bg-black/30 backdrop-blur-sm rounded-lg px-6 py-3 inline-block shadow-xl"
+          style={{ opacity: heroContentOpacity, y: heroContentY }} // Animates with scroll
+          transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
+          className="mt-6 max-w-xl text-xl md:text-2xl text-white/90 bg-black/30 backdrop-blur-md rounded-lg px-6 py-3 inline-block shadow-xl z-10"
         >
-          Vetted, insured, and continuously trained Home-Care Professionals — matched to your household in under 48 hours.
+          Vetted and continuously trained Home-Care Professionals — matched to your household in under 48 hours.
         </motion.p>
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-          className="mt-10 flex flex-col sm:flex-row gap-4"
+          style={{ opacity: heroContentOpacity, y: heroContentY }} // Animates with scroll
+          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          className="mt-10 flex flex-col sm:flex-row gap-4 z-10"
         >
           <button
             type="button"
@@ -215,7 +250,7 @@ export default function LandingPage() {
             👩‍🍳 Apply as HCP
           </button>
         </motion.div>
-      </motion.section> {/* Corrected closing tag */}
+      </motion.section>
 
       {/* Modal Embed (using AnimatePresence for exit animations) */}
       <AnimatePresence>
@@ -228,13 +263,17 @@ export default function LandingPage() {
         )}
       </AnimatePresence>
 
-      {/* Benefits Section */}
+      {/* Benefits Section - Fades and slides over global background */}
       <motion.section
         ref={benefitsRef}
-        style={{ opacity: benefitsOpacity, y: benefitsY }}
-        className="relative min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-8 snap-start"
+        style={{ opacity: benefitsOpacity, y: benefitsY, scale: benefitsScale }}
+        className="relative min-h-screen flex items-center justify-center p-8 z-10"
       >
-        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 p-6 bg-gray-800/60 rounded-3xl shadow-xl border border-gray-700">
+         <motion.div
+          className="absolute inset-0 bg-black/70 backdrop-blur-md" // Darker, blurred overlay
+          style={{ opacity: sectionBgOpacity }}
+         ></motion.div>
+        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 p-6 bg-gray-800/60 rounded-3xl shadow-xl border border-gray-700 relative z-20">
           <div>
             <h2 className="text-3xl font-bold mb-6 text-blue-300">Benefits for Households</h2>
             <ul className="space-y-4 text-gray-200 list-disc list-inside text-lg">
@@ -256,24 +295,31 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* How It Works Section with smooth entrance */}
+      {/* How It Works Section - Content appears over fixed background */}
       <motion.section
         ref={howItWorksRef}
-        style={{ opacity: howItWorksOpacity, scale: howItWorksScale, y: howItWorksY }}
-        className="relative min-h-screen bg-gradient-to-br from-black to-gray-900 flex flex-col items-center justify-center p-8 snap-start"
+        style={{ opacity: howItWorksOpacity, y: howItWorksY }}
+        className="relative min-h-screen flex flex-col items-center justify-center p-8 z-10"
       >
-        <div className="max-w-5xl mx-auto text-center space-y-10">
+        <motion.div
+            className="absolute inset-0 bg-black/80 backdrop-blur-md" // Even darker blur overlay
+            style={{ opacity: sectionBgOpacity }}
+        ></motion.div>
+        <div className="max-w-5xl mx-auto text-center space-y-10 relative z-20">
           <h2 className="text-4xl md:text-5xl font-bold text-white drop-shadow-md">How HomeLift Works</h2>
           <div className="grid md:grid-cols-3 gap-10 mt-8">
             {[
-              { icon: '📝', title: 'Tell Us Your Needs', desc: 'Share your requirements for home care, and we’ll begin the matching process.' },
-              { icon: '🤝', title: 'Get Your Quality Match', desc: 'We carefully select and connect you with rigorously vetted, best-fit HCPs.' },
-              { icon: '📞', title: 'Receive Ongoing Support', desc: 'Enjoy continuous support and seamless communication via WhatsApp, 24/7.' },
+              { icon: '📝', title: 'Tell Us Your Needs', desc: 'Share your specific requirements. We help define the role and skills you need for your home.' },
+              { icon: '🌟', title: 'Vetted & Trained Professionals', desc: 'Our HCPs undergo rigorous background checks, police clearance, and continuous skills training to ensure excellence.' }, // Andela-inspired
+              { icon: '🧠', title: 'Intelligent Matching', desc: 'Leveraging our data-driven system, we expertly match your family with the most compatible and qualified HCPs.' }, // Andela-inspired
+              { icon: '🤝', title: 'Seamless Placement', desc: 'We facilitate a smooth onboarding process, ensuring your selected HCP integrates perfectly into your household routine.' }, // Andela-inspired
+              { icon: '📞', title: 'Ongoing Support & Growth', desc: 'Benefit from continuous support, managed payroll, and opportunities for HCPs to advance their careers through advanced certifications.' }, // Andela-inspired
             ].map((item, index) => (
               <motion.div
                 key={item.title}
                 initial={{ opacity: 0, y: 50 }}
-                animate={howItWorksScrollProgress.get() > 0.3 ? { opacity: 1, y: 0 } : {}} // Trigger animation based on parent scroll
+                // Animate based on this section's scroll progress
+                animate={howItWorksScrollProgress.get() > 0.3 ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
                 className="bg-gray-800 p-8 rounded-3xl shadow-xl flex flex-col items-center transform hover:scale-105 transition duration-300 border border-gray-700"
               >
@@ -286,13 +332,17 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* Testimonials Section - cards slide in from sides */}
+      {/* Testimonials Section - Cards slide in over fixed background */}
       <motion.section
         ref={testimonialsRef}
         style={{ opacity: testimonialsOpacity }}
-        className="relative min-h-screen bg-gradient-to-br from-black to-gray-900 flex items-center justify-center p-8 snap-start"
+        className="relative min-h-screen flex items-center justify-center p-8 z-10"
       >
-        <div className="max-w-5xl mx-auto text-center space-y-10">
+        <motion.div
+            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            style={{ opacity: sectionBgOpacity }}
+        ></motion.div>
+        <div className="max-w-5xl mx-auto text-center space-y-10 relative z-20">
           <h2 className="text-4xl md:text-5xl font-bold text-white drop-shadow-md">What Our Early Adopters Say</h2>
           <div className="grid md:grid-cols-2 gap-10">
             <motion.div
@@ -327,9 +377,13 @@ export default function LandingPage() {
       <motion.section
         ref={faqRef}
         style={{ opacity: faqOpacity, y: faqY }}
-        className="relative min-h-screen bg-gradient-to-br from-gray-900 to-black flex items-center justify-center p-8 snap-start"
+        className="relative min-h-screen flex items-center justify-center p-8 z-10"
       >
-        <div className="max-w-3xl w-full space-y-6 bg-gray-800/60 rounded-3xl shadow-xl p-8 border border-gray-700">
+        <motion.div
+            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            style={{ opacity: sectionBgOpacity }}
+        ></motion.div>
+        <div className="max-w-3xl w-full space-y-6 bg-gray-800/60 rounded-3xl shadow-xl p-8 border border-gray-700 relative z-20">
           <h2 className="text-4xl md:text-5xl font-bold text-center mb-8 text-white drop-shadow-md">Frequently Asked Questions</h2>
           {[
             { q: 'How are Home-Care Professionals (HCPs) vetted?', a: 'Our HCPs undergo a rigorous vetting process including police clearance, National Identification Number (NIN) verification, and comprehensive reference checks to ensure trustworthiness and reliability.' },
