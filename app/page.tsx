@@ -561,7 +561,7 @@ export default function LandingPage() {
           <div className="space-y-4">
             <p className="text-lg">&copy; {year} HomeLift Africa. All rights reserved.</p>
             <p className="text-lg">
-              Questions? <a href="https://wa.me/256700000000" target="_blank" rel="noopener noreferrer" className="underline text-blue-400 hover:text-blue-300 transition">Chat on WhatsApp</a>
+              Questions? <a href="https://wa.me/256777241465" target="_blank" rel="noopener noreferrer" className="underline text-blue-400 hover:text-blue-300 transition">Chat on WhatsApp</a>
             </p>
             <div className="flex gap-4 justify-center mt-4">
               {/* Add social media icons here if applicable */}
