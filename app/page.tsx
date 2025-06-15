@@ -64,7 +64,7 @@ export default function LandingPage() {
       )}
 
       {/* ───────────── Early-bird benefits (HH & HCP) ───────────── */}
-      <section className="max-w-6xl mx-auto py-16 px-6 grid md:grid-cols-2 gap-10">
+      <section className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
         <div>
           <h2 className="text-2xl font-bold mb-4">Early-Bird Benefits for Households</h2>
           <ul className="space-y-3 text-gray-300 list-disc list-inside">
@@ -117,7 +117,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────── Founder story placeholder ─────────────── */}
-      <section className="max-w-4xl mx-auto py-16 px-6 text-center">
+      <section className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
         <h2 className="text-3xl font-bold mb-6">Meet the Founders</h2>
         <p className="text-gray-300 mb-8 max-w-2xl mx-auto">
           Watch a quick 60-second story on why Florence & Elias are on a mission to lift the quality of home life in Africa.
@@ -129,7 +129,7 @@ export default function LandingPage() {
       </section>
 
       {/* ───────────────── Testimonials ───────────────── */}
-      <section className="bg-gray-900 py-16 px-6">
+      <section className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
         <h2 className="text-3xl font-bold text-center mb-12">Early Customers Feedback</h2>
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
           {[1, 2].map((id) => (
@@ -144,7 +144,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────────────── FAQ ─────────────────────── */}
-      <section className="max-w-5xl mx-auto py-16 px-6">
+      <section className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
         <h2 className="text-3xl font-bold text-center mb-12">FAQs</h2>
         <details className="bg-gray-900 rounded-xl p-4 mb-4 cursor-pointer">
           <summary className="font-medium">How are HCPs vetted?</summary>
@@ -157,7 +157,7 @@ export default function LandingPage() {
       </section>
 
       {/* ────────────────────── Footer ────────────────────── */}
-      <footer className="bg-gray-950 py-10 text-center text-gray-500 text-sm">
+      <footer className="bg-black/50 backdrop-blur-sm py-16 px-6 text-center">
         <p>© {year} HomeLift Africa. All rights reserved.</p>
         <p className="mt-1">
           Questions? <a href="https://wa.me/256700000000" className="underline">Chat on WhatsApp</a>
