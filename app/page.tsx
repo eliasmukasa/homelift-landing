@@ -4,8 +4,8 @@ import { useState } from "react";
 import { motion, useViewportScroll, useTransform } from "framer-motion";
 import ApplyModal from "../components/ApplyModal";
 
-const HH_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH/form?hide_title=true&backgroundColor=grey";
-const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX/form?hide_title=true&backgroundColor=grey";
+const HH_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pagPbIcvWw4kXFqjH/form";
+const HCP_FORM_URL = "https://airtable.com/embed/apprHdPkKz0GxMw7D/pag90o8qNsuVlWBpX/form";
 
 export default function LandingPage() {
   const [openForm, setOpenForm] = useState<"none" | "hh" | "hcp">("none");
