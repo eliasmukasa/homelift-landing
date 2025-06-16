@@ -13,22 +13,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HomeLift Africa - Elevating Home Care with Trusted Professionals", // <--- Change this
-  description: "Vetted and trained Home-Care Professionals for your household needs in Africa. Simplify your home life with trusted care.", // <--- Change this
+  title: "HomeLift Africa - Elevating Home Care with Trusted Professionals", 
+  description: "Trusted, vetted & trained home-care professionals at your service.",
+  themeColor: "#0a192f", 
+  manifest: "/manifest.json", 
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0a192f" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
