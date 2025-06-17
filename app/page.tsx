@@ -455,7 +455,7 @@ export default function LandingPage() {
         <motion.section
           ref={testimonialsRef}
           style={{ opacity: testimonialsOpacity }}
-          className="relative min-h-screen flex items-center justify-center p-8 z-10"
+          className="relative min-h-[100vh] flex items-center justify-center p-8 z-10"
         >
           <motion.div
               className="absolute inset-0 bg-black/80 backdrop-blur-md"
@@ -565,14 +565,14 @@ export default function LandingPage() {
               onClick={() => setOpenForm("hh")}
               className="bg-blue-600 hover:bg-blue-500 transition duration-300 rounded-xl px-10 py-5 font-bold text-xl shadow-lg transform hover:scale-105"
             >
-              Find Your HCP
+              🏠 Find Your HCP
             </button>
             <button
               type="button"
               onClick={() => setOpenForm("hcp")}
               className="bg-green-600 hover:bg-green-500 transition duration-300 rounded-xl px-10 py-5 font-bold text-xl shadow-lg transform hover:scale-105"
             >
-              Start Your Career
+              👩‍🍳 Start Your Career
             </button>
           </motion.div>
         </section>
@@ -584,11 +584,26 @@ export default function LandingPage() {
         >
           <div className="space-y-4">
             <p className="text-lg">&copy; {year} HomeLift Africa. All rights reserved.</p>
-            <p className="text-lg">
-              Questions? <a href="https://wa.me/256777241465" target="_blank" rel="noopener noreferrer" className="underline text-blue-400 hover:text-blue-300 transition">Chat on WhatsApp</a>
+            <p className="text-lg flex items-center justify-center gap-2">
+              Questions?
+              <a href="https://wa.me/256777241465" target="_blank" rel="noopener noreferrer" className="underline text-blue-400 hover:text-blue-300 transition flex items-center gap-1">
+                <svg fill="#ffffff" height="20" width="20" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" viewBox="0 0 308 308" xmlSpace="preserve">
+                  <g id="XMLID_468_">
+                    <path id="XMLID_469_" d="M227.904,176.981c-0.6-0.288-23.054-11.345-27.044-12.781c-1.629-0.585-3.374-1.156-5.23-1.156c-3.032,0-5.579,1.511-7.563,4.479c-2.243,3.334-9.033,11.271-11.131,13.642c-0.274,0.313-0.648,0.687-0.872,0.687c-0.201,0-3.676-1.431-4.728-1.888c-24.087-10.463-42.37-35.624-44.877-39.867c-0.358-0.61-0.373-0.887-0.376-0.887c0.088-0.323,0.898-1.135,1.316-1.554c1.223-1.21,2.548-2.805,3.83-4.348c0.607-0.731,1.215-1.463,1.812-2.153c1.86-2.164,2.688-3.844,3.648-5.79l0.503-1.011c2.344-4.657,0.342-8.587-0.305-9.856c-0.531-1.062-10.012-23.944-11.02-26.348c-2.424-5.801-5.627-8.502-10.078-8.502c-0.413,0,0,0-1.732,0.073c-2.109,0.089-13.594,1.601-18.672,4.802c-5.385,3.395-14.495,14.217-14.495,33.249c0,17.129,10.87,33.302,15.537,39.453c0.116,0.155,0.329,0.47,0.638,0.922c17.873,26.102,40.154,45.446,62.741,54.469c21.745,8.686,32.042,9.69,37.896,9.69c0.001,0,0.001,0,0.001,0c2.46,0,4.429-0.193,6.166-0.364l1.102-0.105c7.512-0.666,24.02-9.22,27.775-19.655c2.958-8.219,3.738-17.199,1.77-20.458C233.168,179.508,230.845,178.393,227.904,176.981z"/>
+                    <path id="XMLID_470_" d="M156.734,0C73.318,0,5.454,67.354,5.454,150.143c0,26.777,7.166,52.988,20.741,75.928L0.212,302.716c-0.484,1.429-0.124,3.009,0.933,4.085C1.908,307.58,2.943,308,4,308c0.405,0,0.813-0.061,1.211-0.188l79.92-25.396c21.87,11.685,46.588,17.853,71.604,17.853C240.143,300.27,308,232.923,308,150.143C308,67.354,240.143,0,156.734,0zM156.734,268.994c-23.539,0-46.338-6.797-65.936-19.657c-0.659-0.433-1.424-0.655-2.194-0.655c-0.407,0-0.815,0.062-1.212,0.188l-40.035,12.726l12.924-38.129c0.418-1.234,0.209-2.595-0.561-3.647c-14.924-20.392-22.813-44.485-22.813-69.677c0-65.543,53.754-118.867,119.826-118.867c66.064,0,119.812,53.324,119.812,118.867C276.546,215.678,222.799,268.994,156.734,268.994z"/>
+                  </g>
+                </svg>
+                WhatsApp
+              </a>
             </p>
             <div className="flex gap-4 justify-center mt-4">
-              {/* Add social media icons here if applicable */}
+              {/* Email Icon */}
+              <a href="mailto:info@homelift.africa" className="text-gray-400 hover:text-white transition flex items-center gap-1" aria-label="Email HomeLift Africa">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M2.003 5.884L12 11.882l9.997-5.998A2 2 0 0020 5H4a2 2 0 00-1.997.884zM2 8.19v11.725A2.002 2.002 0 004 22h16a2.002 2.002 0 002-2.085V8.19L12 14.19 2.003 8.19z"/>
+                </svg>
+                info@homelift.africa
+              </a>
               <a href="#" className="text-gray-400 hover:text-white transition" aria-label="Facebook"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879v-6.988H7.72V12h2.718V9.771c0-2.697 1.62-4.17 4.043-4.17 1.161 0 2.158.214 2.456.31v2.69h-1.597c-1.258 0-1.503.6-1.503 1.47v1.928h3.003l-.479 3.011h-2.524v6.988C18.343 21.128 22 16.991 22 12c0-5.523-4.477-10-10-10z"/></svg></a>
               <a href="#" className="text-gray-400 hover:text-white transition" aria-label="LinkedIn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-5.523 0-10 4.477-10 10s4.477 10 10 10 10-4.477 10-10-4.477-10-10-10zm-2 16h-3v-9h3v9zm-1.5-10.5c-.828 0-1.5-.672-1.5-1.5s.672-1.5 1.5-1.5 1.5.672 1.5 1.5-.672 1.5-1.5 1.5zm8.5 10.5h-3v-5.604c0-3.368 4-3.593 4 0v5.604h-1zm-4 0h-3v-9h3v9z"/></svg></a>
             </div>
