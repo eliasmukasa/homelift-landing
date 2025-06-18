@@ -1,18 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { getDownloadURL, ref, uploadBytesResumable, getStorage } from 'firebase/storage';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, query, getDocs, deleteDoc } from 'firebase/firestore';
 import { XMarkIcon, PencilSquareIcon, TrashIcon, PlusCircleIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 
-// The __firebase_config global variable declaration is no longer directly used for config parsing
-// in this version, as we are prioritizing a process.env-based approach with graceful fallback.
-// It remains here to avoid TypeScript errors if it's implicitly used elsewhere or for clarity.
-declare const __firebase_config: string | undefined;
-
-// --- Firebase Context and Provider for Admin Panel ---
+// --- Firebase Context and Provider ---
+// Define the type for the Firebase context value
 type FirebaseContextType = {
   db: any | null;
   auth: any | null;
@@ -24,8 +20,10 @@ type FirebaseContextType = {
   signOutAdmin: () => Promise<void>;
 };
 
+// Create the context
 const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
 
+// Custom hook to use the Firebase context
 export const useFirebase = () => {
   const context = useContext(FirebaseContext);
   if (!context) {
@@ -34,7 +32,9 @@ export const useFirebase = () => {
   return context;
 };
 
-// Firebase Provider Component for the Admin Panel
+// Firebase Provider Component
+// This component initializes Firebase and provides auth/firestore/storage instances
+// to its children via Context. It relies on NEXT_PUBLIC_ environment variables.
 const FirebaseProvider = ({ children }: { children: React.ReactNode }) => {
   const [db, setDb] = useState<any>(null);
   const [auth, setAuth] = useState<any>(null);
@@ -44,28 +44,28 @@ const FirebaseProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
-    // IMPORTANT: For Canvas environment, directly accessing process.env.NEXT_PUBLIC_...
-    // leads to "process is not defined" errors.
-    // The __firebase_config variable is the intended secure way, but if that's
-    // not working reliably, hardcoding placeholders is a TEMPORARY workaround for testing IN CANVAS.
-    // YOU MUST REPLACE THESE PLACEHOLDER VALUES WITH YOUR ACTUAL FIREBASE CONFIG FROM YOUR PROJECT.
-    // For production, use environment variables from your hosting provider (e.g., Vercel, Netlify).
-
+    // Define the Firebase configuration using environment variables
     const firebaseConfig = {
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+      measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Optional: if you use Firebase Analytics
     };
 
-    // Check if any critical Firebase config values are still placeholders
-    const isPlaceholderConfig = Object.values(firebaseConfig).some(v => typeof v === 'string' && v.startsWith('YOUR_'));
+    // Check if any critical Firebase config values are missing, null, or empty strings
+    const isConfigIncomplete = Object.values(firebaseConfig).some(v => v === undefined || v === null || v === '');
 
-    if (isPlaceholderConfig) {
-      console.error("CRITICAL ERROR: Firebase configuration is incomplete or still using placeholder values ('YOUR_...'). Please replace all placeholders with your actual Firebase project credentials from the Firebase Console.");
-      setIsAuthReady(true); // Allow the UI to unblock, but Firebase functionality will be disabled.
+    if (isConfigIncomplete) {
+      console.error(
+        "CRITICAL ERROR: Firebase configuration environment variables are incomplete or missing. " +
+        "Please ensure your .env.local file (for local development) or your hosting provider's " +
+        "environment variables (for deployment) are correctly configured. " +
+        "Firebase functionality will be disabled."
+      );
+      setIsAuthReady(true); // Still set to true to unblock the UI, but Firebase will be non-functional
       setDb(null);
       setAuth(null);
       setStorage(null);
@@ -75,8 +75,8 @@ const FirebaseProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      console.log("Attempting to initialize Firebase with config:", firebaseConfig);
-      // Check if an app is already initialized to prevent re-initialization errors
+      console.log("Attempting to initialize Firebase with config from environment variables.");
+      // Initialize Firebase app. If an app is already initialized, get it to prevent errors.
       const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
       const firestore = getFirestore(app);
       const firebaseAuth = getAuth(app);
@@ -86,6 +86,7 @@ const FirebaseProvider = ({ children }: { children: React.ReactNode }) => {
       setAuth(firebaseAuth);
       setStorage(firebaseStorage);
 
+      // Listen for authentication state changes
       const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
         setCurrentUser(user);
         setUserId(user ? user.uid : null);
@@ -93,26 +94,34 @@ const FirebaseProvider = ({ children }: { children: React.ReactNode }) => {
         console.log("Admin Auth state changed. User:", user ? user.email : "None");
       });
 
-      return () => unsubscribe(); // Cleanup auth listener on component unmount
-    } catch (error) {
-      console.error("Failed to initialize Firebase for Admin. Please check your Firebase configuration and internet connection:", error);
+      // Cleanup subscription on component unmount
+      return () => unsubscribe();
+    } catch (error: any) {
+      console.error(
+        "Failed to initialize Firebase for Admin. " +
+        "Please check your environment variables, Firebase project settings, and internet connection:",
+        error.message, error
+      );
       setIsAuthReady(true); // Ensure UI unblocks even on initialization error
       setDb(null);
       setAuth(null);
       setStorage(null);
     }
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []); // Empty dependency array ensures this effect runs only once on mount
 
+  // Admin sign-in function
   const signInAdmin = async (email: string, password: string) => {
     if (!auth) throw new Error("Firebase Auth not initialized.");
     return await signInWithEmailAndPassword(auth, email, password);
   };
 
+  // Admin sign-out function
   const signOutAdmin = async () => {
     if (!auth) throw new Error("Firebase Auth not initialized.");
     await signOut(auth);
   };
 
+  // Provide Firebase instances and auth state to context consumers
   const contextValue = { db, auth, storage, currentUser, userId, isAuthReady, signInAdmin, signOutAdmin };
 
   return (
@@ -130,45 +139,49 @@ const FirebaseProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 
-// --- UploadAvatar Component (for internal use within HCPForm) ---
+// --- UploadAvatar Component ---
+// Handles file selection, upload to Firebase Storage, and provides the download URL.
 interface UploadAvatarProps {
   onUploadSuccess: (url: string) => void;
   initialImageUrl?: string | null;
 }
 
 const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialImageUrl }) => {
-  const { storage } = useFirebase();
+  const { storage } = useFirebase(); // Get storage instance from Firebase context
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState<string | null>(initialImageUrl || null);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Update internal URL state if initialImageUrl prop changes
   useEffect(() => {
     if (initialImageUrl && initialImageUrl !== url) {
       setUrl(initialImageUrl);
     }
   }, [initialImageUrl]);
 
+  // Handle file input change
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFile(null);
-    setUrl(null);
+    setFile(null); // Clear previous file
+    setUrl(null); // Clear previous URL
     setProgress(0);
     setError(null);
 
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      setFile(e.target.files[0]); // Set the selected file
     }
   };
 
+  // Handle image upload to Firebase Storage
   const onUpload = async () => {
     if (!file) {
       setError("Please select a file first.");
       return;
     }
-    if (!storage) { // Ensure storage is initialized
+    if (!storage) {
       setError("Firebase Storage not initialized. Cannot upload.");
-      console.error("Firebase storage instance is null. Check FirebaseProvider initialization and environment variables.");
+      console.error("Firebase storage instance is null. Check FirebaseProvider initialization.");
       return;
     }
 
@@ -176,25 +189,29 @@ const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialIma
     setError(null);
     setProgress(0);
 
+    // Create a storage reference with a unique name
     const storageRef = ref(storage, `hcp_profile_pictures/${Date.now()}_${file.name}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
     uploadTask.on(
       'state_changed',
       (snapshot) => {
+        // Calculate and update upload progress
         const currentProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setProgress(currentProgress);
       },
       (uploadError: any) => {
+        // Handle unsuccessful uploads
         console.error("Upload failed:", uploadError);
         setError(`Upload failed: ${uploadError.message || 'Unknown error'}`);
         setUploading(false);
       },
       async () => {
+        // Handle successful uploads on complete
         try {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          setUrl(downloadURL);
-          onUploadSuccess(downloadURL);
+          setUrl(downloadURL); // Set the downloaded URL
+          onUploadSuccess(downloadURL); // Pass URL to parent component
           setError(null);
           console.log('File available at', downloadURL);
         } catch (urlError: any) {
@@ -212,6 +229,7 @@ const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialIma
       <h3 className="text-lg font-semibold text-white">Profile Picture</h3>
       {url && (
         <div className="flex flex-col items-center mb-4">
+          {/* Display current profile picture if available */}
           <img src={url} alt="HCP Avatar" className="w-24 h-24 rounded-full object-cover border-2 border-blue-400 shadow-lg" />
           <p className="text-xs text-gray-400 break-all mt-2">{url}</p>
         </div>
@@ -223,7 +241,7 @@ const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialIma
         <input
           id="file-upload"
           type="file"
-          accept="image/*"
+          accept="image/*" // Only accept image files
           onChange={onPick}
           className="block w-full text-sm text-gray-400
             file:mr-4 file:py-2 file:px-4
@@ -238,7 +256,7 @@ const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialIma
         <button
           className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-500 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed w-full"
           onClick={onUpload}
-          disabled={uploading}
+          disabled={uploading} // Disable button during upload
         >
           {uploading ? `Uploading ${Math.round(progress)}%...` : 'Upload Selected Image'}
         </button>
@@ -246,6 +264,7 @@ const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialIma
 
       {progress > 0 && progress < 100 && (
         <div className="w-full bg-gray-600 rounded-full h-2.5 mt-2">
+          {/* Progress bar for upload */}
           <div
             className="bg-green-500 h-2.5 rounded-full"
             style={{ width: `${progress}%` }}
@@ -260,25 +279,27 @@ const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialIma
 
 
 // --- HCPForm Component ---
+// Form for creating or editing HCP profiles.
 interface HcpProfile {
-  id?: string;
+  id?: string; // Optional for new profiles
   fullName: string;
   primarySkill: string;
   experienceYears: number;
   bioSummary: string;
   locationPreference: string;
   profilePhotoUrl: string | null;
-  [key: string]: any;
+  [key: string]: any; // Allow for other fields
 }
 
 interface HCPFormProps {
-  onSave: () => void;
-  hcpToEdit?: HcpProfile | null;
+  onSave: () => void; // Callback function after successful save
+  hcpToEdit?: HcpProfile | null; // Optional: HCP profile to pre-fill form for editing
 }
 
 const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
-  const { db } = useFirebase();
+  const { db } = useFirebase(); // Get Firestore instance from Firebase context
   const [profile, setProfile] = useState<HcpProfile>(hcpToEdit || {
+    // Initialize profile state with empty values or data from hcpToEdit
     fullName: '',
     primarySkill: '',
     experienceYears: 0,
@@ -290,10 +311,12 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // Update form fields when hcpToEdit prop changes (e.g., when editing a different HCP)
   useEffect(() => {
     if (hcpToEdit) {
       setProfile(hcpToEdit);
     } else {
+      // Reset form for new HCP creation
       setProfile({
         fullName: '',
         primarySkill: '',
@@ -303,46 +326,53 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
         profilePhotoUrl: null,
       });
     }
-    setError(null);
-    setSuccess(null);
+    setError(null); // Clear errors
+    setSuccess(null); // Clear success messages
   }, [hcpToEdit]);
 
+  // Handle form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    // Convert experienceYears to a number
     setProfile(prev => ({ ...prev, [name]: name === 'experienceYears' ? Number(value) : value }));
   };
 
+  // Callback for successful photo upload from UploadAvatar component
   const handlePhotoUploadSuccess = (url: string) => {
     setProfile(prev => ({ ...prev, profilePhotoUrl: url }));
     setSuccess("Profile picture uploaded successfully!");
   };
 
+  // Handle form submission (create or update HCP profile)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db) {
       setError("Database not initialized.");
       return;
     }
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+    setLoading(true); // Set loading state
+    setError(null); // Clear previous errors
+    setSuccess(null); // Clear previous success messages
 
     try {
       const hcpProfilesCol = collection(db, 'hcpProfiles');
       if (profile.id) {
+        // Update existing HCP profile
         const hcpDocRef = doc(db, 'hcpProfiles', profile.id);
         await setDoc(hcpDocRef, { ...profile, lastUpdated: new Date().toISOString() }, { merge: true });
         setSuccess("HCP profile updated successfully!");
       } else {
+        // Create new HCP profile
+        // Using `setDoc(doc(collection))` instead of `addDoc` to let Firestore generate ID but keep `doc()` for potential future custom ID logic
         await setDoc(doc(hcpProfilesCol), { ...profile, dateCreated: new Date().toISOString(), internalStatus: "Pending Review" });
         setSuccess("New HCP profile created successfully!");
       }
-      onSave();
+      onSave(); // Call parent's onSave to refresh list
     } catch (err: any) {
       setError(`Failed to save profile: ${err.message}`);
       console.error("Error saving HCP profile:", err);
     } finally {
-      setLoading(false);
+      setLoading(false); // Reset loading state
     }
   };
 
@@ -352,11 +382,13 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
         {hcpToEdit ? 'Edit HCP Profile' : 'Create New HCP Profile'}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Profile Picture Upload Section */}
         <UploadAvatar
           onUploadSuccess={handlePhotoUploadSuccess}
           initialImageUrl={profile.profilePhotoUrl}
         />
 
+        {/* Full Name Input */}
         <div>
           <label htmlFor="fullName" className="block text-gray-300 text-sm font-bold mb-2">Full Name</label>
           <input
@@ -370,6 +402,7 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
           />
         </div>
 
+        {/* Primary Skill Input */}
         <div>
           <label htmlFor="primarySkill" className="block text-gray-300 text-sm font-bold mb-2">Primary Skill</label>
           <input
@@ -383,6 +416,7 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
           />
         </div>
 
+        {/* Experience Years Input */}
         <div>
           <label htmlFor="experienceYears" className="block text-gray-300 text-sm font-bold mb-2">Experience (Years)</label>
           <input
@@ -397,6 +431,7 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
           />
         </div>
 
+        {/* Bio Summary Textarea */}
         <div>
           <label htmlFor="bioSummary" className="block text-gray-300 text-sm font-bold mb-2">Bio Summary</label>
           <textarea
@@ -410,6 +445,7 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
           />
         </div>
 
+        {/* Location Preference Input */}
         <div>
           <label htmlFor="locationPreference" className="block text-gray-300 text-sm font-bold mb-2">Location Preference</label>
           <input
@@ -423,12 +459,14 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
           />
         </div>
 
+        {/* Error and Success Messages */}
         {error && <p className="text-red-400 text-sm italic">{error}</p>}
         {success && <p className="text-green-400 text-sm italic flex items-center gap-2"><CheckCircleIcon className="h-5 w-5"/> {success}</p>}
 
+        {/* Submit Button */}
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading} // Disable button while loading
           className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl w-full transition duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Saving...' : (hcpToEdit ? 'Update Profile' : 'Create Profile')}
@@ -439,71 +477,79 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
 };
 
 // --- AdminPage Component ---
+// The main admin panel page displaying HCPs and providing CRUD operations.
 function AdminPage() {
-  const { currentUser, signInAdmin, signOutAdmin, db, isAuthReady } = useFirebase();
+  const { currentUser, signInAdmin, signOutAdmin, db, isAuthReady } = useFirebase(); // Get Firebase context values
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [hcpList, setHcpList] = useState<HcpProfile[]>([]);
   const [loadingHCPs, setLoadingHCPs] = useState(true);
-  const [selectedHCP, setSelectedHCP] = useState<HcpProfile | null>(null);
-  const [showForm, setShowForm] = useState(false);
+  const [selectedHCP, setSelectedHCP] = useState<HcpProfile | null>(null); // State to hold HCP being edited
+  const [showForm, setShowForm] = useState(false); // State to control form visibility
 
+  // Function to fetch HCP profiles from Firestore
   const fetchHCPs = async () => {
-    if (!db) return;
+    if (!db) return; // Ensure Firestore is initialized
     setLoadingHCPs(true);
     try {
-      const q = query(collection(db, 'hcpProfiles'));
+      const q = query(collection(db, 'hcpProfiles')); // Query the 'hcpProfiles' collection
       const querySnapshot = await getDocs(q);
       const hcps: HcpProfile[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as HcpProfile }));
-      setHcpList(hcps);
+      setHcpList(hcps); // Update HCP list state
       console.log("Fetched HCPs:", hcps);
     } catch (error: any) {
       console.error("Error fetching HCPs:", error);
-      setLoginError(`Failed to load HCPs: ${error.message}`);
+      setLoginError(`Failed to load HCPs: ${error.message}`); // Display error
     } finally {
-      setLoadingHCPs(false);
+      setLoadingHCPs(false); // Reset loading state
     }
   };
 
+  // Effect hook to fetch HCPs when auth state changes or db becomes available
   useEffect(() => {
     if (isAuthReady && currentUser && db) {
-      fetchHCPs();
+      fetchHCPs(); // Fetch HCPs only if authenticated and db is ready
     } else if (isAuthReady && !currentUser) {
-      setLoadingHCPs(false);
+      setLoadingHCPs(false); // If not authenticated, stop loading indicator
     }
-  }, [isAuthReady, currentUser, db]);
+  }, [isAuthReady, currentUser, db]); // Dependencies for the effect
 
+  // Handle admin login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
     try {
-      await signInAdmin(email, password);
-      setEmail('');
-      setPassword('');
+      await signInAdmin(email, password); // Call signInAdmin from context
+      setEmail(''); // Clear email field
+      setPassword(''); // Clear password field
     } catch (err: any) {
-      setLoginError(err.message);
+      setLoginError(err.message); // Display login error
     }
   };
 
+  // Handle admin logout
   const handleLogout = async () => {
-    await signOutAdmin();
-    setHcpList([]);
+    await signOutAdmin(); // Call signOutAdmin from context
+    setHcpList([]); // Clear HCP list on logout
     setSelectedHCP(null);
     setShowForm(false);
   };
 
+  // Set HCP to edit and show the form
   const handleEditHCP = (hcp: HcpProfile) => {
     setSelectedHCP(hcp);
     setShowForm(true);
   };
 
+  // Handle deletion of an HCP profile
   const handleDeleteHCP = async (hcpId: string) => {
-    if (!db || !confirm("Are you sure you want to delete this HCP profile?")) return;
+    // IMPORTANT: For production, replace `confirm` with a custom modal for better UX.
+    if (!db || !confirm("Are you sure you want to delete this HCP profile? This action cannot be undone.")) return;
     setLoadingHCPs(true);
     try {
-      await deleteDoc(doc(db, 'hcpProfiles', hcpId));
-      fetchHCPs();
+      await deleteDoc(doc(db, 'hcpProfiles', hcpId)); // Delete document from Firestore
+      fetchHCPs(); // Re-fetch list to update UI
     } catch (error: any) {
       console.error("Error deleting HCP:", error);
       setLoginError(`Failed to delete HCP: ${error.message}`);
@@ -512,12 +558,14 @@ function AdminPage() {
     }
   };
 
+  // Callback function after form save (create/update)
   const handleFormSave = () => {
-    setShowForm(false);
-    setSelectedHCP(null);
-    fetchHCPs();
+    setShowForm(false); // Hide the form
+    setSelectedHCP(null); // Clear selected HCP
+    fetchHCPs(); // Re-fetch HCP list
   };
 
+  // Render the loading spinner while Firebase auth state is being determined
   if (!isAuthReady) {
     return (
       <div className="fixed inset-0 bg-gray-950 flex items-center justify-center text-white text-xl">
@@ -526,6 +574,7 @@ function AdminPage() {
     );
   }
 
+  // Render the login form if no user is authenticated
   if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950 p-8">
@@ -573,6 +622,7 @@ function AdminPage() {
     );
   }
 
+  // Main Admin Panel Content (rendered after successful login)
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <header className="flex justify-between items-center mb-10 pb-4 border-b border-gray-700">

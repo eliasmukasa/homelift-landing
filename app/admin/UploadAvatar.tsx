@@ -17,27 +17,31 @@ export default function UploadAvatar() {
     setFile(e.target.files?.[0] ?? null);
   }
 
-  async function onUpload() {
-    if (!file) return;
-    const id = crypto.randomUUID();
-    const fileRef = ref(storage, `hcp-avatars/${id}_${file.name}`);
-    const task = uploadBytesResumable(fileRef, file, { contentType: file.type });
+  async function onUpload () {
+  if (!file) return
 
-    task.on(
-      "state_changed",
-      snap => {
-        const pct = (snap.bytesTransferred / snap.totalBytes) * 100;
-        setProgress(Math.round(pct));
-      },
-      err => setError(err.message),
-      async () => {
-        const downloadURL = await getDownloadURL(task.snapshot.ref);
-        setUrl(downloadURL);
-        // TODO: write downloadURL into the corresponding HCP document
-      }
-    );
+  /* ① bail out early if storage is not initialised */
+  if (!storage) {
+    setError('Firebase Storage not initialised – check env vars / restart dev server')
+    return
   }
 
+  /* ② continue with the upload */
+  const id      = crypto.randomUUID()
+  const fileRef = ref(storage, `hcp-avatars/${id}_${file.name}`)
+
+  const task = uploadBytesResumable(fileRef, file, { contentType: file.type })
+
+  task.on('state_changed',
+    snap => setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+    err  => setError(err.message),
+    async () => {
+      const url = await getDownloadURL(fileRef)
+      setUrl(url)                         // show the image or save it to Firestore
+      setFile(null); setProgress(0)
+    }
+  )
+}
   return (
     <div className="space-y-6 max-w-sm">
       <input type="file" accept="image/*" onChange={onPick} />
