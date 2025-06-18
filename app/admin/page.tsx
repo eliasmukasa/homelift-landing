@@ -1,167 +1,63 @@
-"use client";
+// app/admin/page.tsx
+// This file defines the main HomeLift HCP Admin Panel page.
 
-import { useState, useEffect, createContext, useContext } from "react";
-import { getDownloadURL, ref, uploadBytesResumable, getStorage } from 'firebase/storage';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, query, getDocs, deleteDoc } from 'firebase/firestore';
-import { XMarkIcon, PencilSquareIcon, TrashIcon, PlusCircleIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+"use client"; // This directive indicates that this is a Client Component,
+             // enabling interactive features and client-side logic.
 
-// --- Firebase Context and Provider ---
-// Define the type for the Firebase context value
-type FirebaseContextType = {
-  db: any | null;
-  auth: any | null;
-  storage: any | null;
-  currentUser: User | null;
-  userId: string | null;
-  isAuthReady: boolean;
-  signInAdmin: (email: string, password: string) => Promise<any>;
-  signOutAdmin: () => Promise<void>;
-};
+import { useState, useEffect, useRef } from "react";
+import { collection, query, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'; // Firestore functions
+import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage'; // Storage functions
+// Import the FirebaseProvider and useFirebase hook from the dedicated context file.
+// Adjust the import path based on your actual project structure.
+// Example: if `app` and `lib` are siblings in your project root, the path might be `../../lib/firebase/FirebaseContext`.
+import { useFirebase, FirebaseProvider } from '../../lib/firebase/FirebaseContext';
+import { XMarkIcon, PencilSquareIcon, TrashIcon, PlusCircleIcon, CheckCircleIcon, PhotoIcon } from "@heroicons/react/24/outline";
 
-// Create the context
-const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
-
-// Custom hook to use the Firebase context
-export const useFirebase = () => {
-  const context = useContext(FirebaseContext);
-  if (!context) {
-    throw new Error('useFirebase must be used within a FirebaseProvider');
-  }
-  return context;
-};
-
-// Firebase Provider Component
-// This component initializes Firebase and provides auth/firestore/storage instances
-// to its children via Context. It relies on NEXT_PUBLIC_ environment variables.
-const FirebaseProvider = ({ children }: { children: React.ReactNode }) => {
-  const [db, setDb] = useState<any>(null);
-  const [auth, setAuth] = useState<any>(null);
-  const [storage, setStorage] = useState<any>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-
-  useEffect(() => {
-    // Define the Firebase configuration using environment variables
-    const firebaseConfig = {
-      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-      measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Optional: if you use Firebase Analytics
-    };
-
-    // Check if any critical Firebase config values are missing, null, or empty strings
-    const isConfigIncomplete = Object.values(firebaseConfig).some(v => v === undefined || v === null || v === '');
-
-    if (isConfigIncomplete) {
-      console.error(
-        "CRITICAL ERROR: Firebase configuration environment variables are incomplete or missing. " +
-        "Please ensure your .env.local file (for local development) or your hosting provider's " +
-        "environment variables (for deployment) are correctly configured. " +
-        "Firebase functionality will be disabled."
-      );
-      setIsAuthReady(true); // Still set to true to unblock the UI, but Firebase will be non-functional
-      setDb(null);
-      setAuth(null);
-      setStorage(null);
-      setCurrentUser(null);
-      setUserId(null);
-      return;
-    }
-
-    try {
-      console.log("Attempting to initialize Firebase with config from environment variables.");
-      // Initialize Firebase app. If an app is already initialized, get it to prevent errors.
-      const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-      const firestore = getFirestore(app);
-      const firebaseAuth = getAuth(app);
-      const firebaseStorage = getStorage(app);
-
-      setDb(firestore);
-      setAuth(firebaseAuth);
-      setStorage(firebaseStorage);
-
-      // Listen for authentication state changes
-      const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
-        setCurrentUser(user);
-        setUserId(user ? user.uid : null);
-        setIsAuthReady(true); // Firebase Auth state has been determined
-        console.log("Admin Auth state changed. User:", user ? user.email : "None");
-      });
-
-      // Cleanup subscription on component unmount
-      return () => unsubscribe();
-    } catch (error: any) {
-      console.error(
-        "Failed to initialize Firebase for Admin. " +
-        "Please check your environment variables, Firebase project settings, and internet connection:",
-        error.message, error
-      );
-      setIsAuthReady(true); // Ensure UI unblocks even on initialization error
-      setDb(null);
-      setAuth(null);
-      setStorage(null);
-    }
-  }, []); // Empty dependency array ensures this effect runs only once on mount
-
-  // Admin sign-in function
-  const signInAdmin = async (email: string, password: string) => {
-    if (!auth) throw new Error("Firebase Auth not initialized.");
-    return await signInWithEmailAndPassword(auth, email, password);
-  };
-
-  // Admin sign-out function
-  const signOutAdmin = async () => {
-    if (!auth) throw new Error("Firebase Auth not initialized.");
-    await signOut(auth);
-  };
-
-  // Provide Firebase instances and auth state to context consumers
-  const contextValue = { db, auth, storage, currentUser, userId, isAuthReady, signInAdmin, signOutAdmin };
-
-  return (
-    <FirebaseContext.Provider value={contextValue}>
-      {/* Show loading indicator until auth state is determined */}
-      {!isAuthReady && (
-        <div className="fixed inset-0 bg-gray-950 flex items-center justify-center text-white text-xl">
-          Loading Admin Application...
-        </div>
-      )}
-      {/* Render children only when authentication readiness is determined */}
-      {isAuthReady && children}
-    </FirebaseContext.Provider>
-  );
-};
-
-
-// --- UploadAvatar Component ---
-// Handles file selection, upload to Firebase Storage, and provides the download URL.
-interface UploadAvatarProps {
-  onUploadSuccess: (url: string) => void;
-  initialImageUrl?: string | null;
+/**
+ * @interface HcpProfile
+ * Defines the structure for a Home-Care Professional (HCP) profile.
+ */
+interface HcpProfile {
+  id?: string; // Optional Firestore document ID for existing profiles
+  fullName: string;
+  primarySkill: string;
+  experienceYears: number;
+  bioSummary: string;
+  locationPreference: string;
+  profilePhotoUrl: string | null; // URL to their profile picture in Firebase Storage
+  // Allow for other flexible properties (e.g., internal status, creation date)
+  [key: string]: any;
 }
 
-const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialImageUrl }) => {
-  const { storage } = useFirebase(); // Get storage instance from Firebase context
-  const [file, setFile] = useState<File | null>(null);
-  const [url, setUrl] = useState<string | null>(initialImageUrl || null);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+// --- UploadAvatar Component (Defined within page.tsx as per user request to keep it as an admin function) ---
+/**
+ * @component UploadAvatar
+ * Handles the selection and upload of an image file to Firebase Storage for an HCP's profile picture.
+ * @param {object} props
+ * @param {(url: string) => void} props.onUploadSuccess - Callback function invoked with the download URL upon successful upload.
+ * @param {string | null} [props.initialImageUrl] - Optional initial image URL to display (for editing).
+ */
+const UploadAvatar: React.FC<{ onUploadSuccess: (url: string) => void; initialImageUrl?: string | null; }> = ({ onUploadSuccess, initialImageUrl }) => {
+  const { storage } = useFirebase(); // Get Firebase Storage instance from context
+  const [file, setFile] = useState<File | null>(null); // State for the selected image file
+  const [url, setUrl] = useState<string | null>(initialImageUrl || null); // State for the uploaded image's URL
+  const [progress, setProgress] = useState(0); // State for upload progress percentage
+  const [error, setError] = useState<string | null>(null); // State for any upload errors
+  const [uploading, setUploading] = useState(false); // State to indicate if an upload is in progress
+  const fileInputRef = useRef<HTMLInputElement>(null); // Ref for the file input element
 
-  // Update internal URL state if initialImageUrl prop changes
+  // Effect to update the displayed image URL if the `initialImageUrl` prop changes (e.g., when editing a different HCP).
   useEffect(() => {
     if (initialImageUrl && initialImageUrl !== url) {
       setUrl(initialImageUrl);
     }
-  }, [initialImageUrl]);
+  }, [initialImageUrl, url]);
 
-  // Handle file input change
+  /**
+   * Handles the selection of a file from the input.
+   * Resets previous upload states.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event from the file input.
+   */
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(null); // Clear previous file
     setUrl(null); // Clear previous URL
@@ -169,56 +65,65 @@ const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialIma
     setError(null);
 
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]); // Set the selected file
+      setFile(e.target.files[0]); // Store the selected file
     }
   };
 
-  // Handle image upload to Firebase Storage
+  /**
+   * Initiates the file upload process to Firebase Storage.
+   */
   const onUpload = async () => {
     if (!file) {
       setError("Please select a file first.");
       return;
     }
     if (!storage) {
-      setError("Firebase Storage not initialized. Cannot upload.");
-      console.error("Firebase storage instance is null. Check FirebaseProvider initialization.");
+      setError("Firebase Storage not initialized. Cannot upload. Check Firebase config.");
+      console.error("Firebase storage instance is null.");
       return;
     }
 
-    setUploading(true);
-    setError(null);
-    setProgress(0);
+    setUploading(true); // Set uploading state to true
+    setError(null); // Clear previous errors
+    setProgress(0); // Reset progress
 
-    // Create a storage reference with a unique name
+    // Create a unique storage reference path for the file in 'hcp_profile_pictures' folder.
+    // Using Date.now() for uniqueness, but in a real app, you might tie this to the HCP's Firestore ID.
     const storageRef = ref(storage, `hcp_profile_pictures/${Date.now()}_${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    const uploadTask = uploadBytesResumable(storageRef, file); // Start the upload task
 
+    // Listen for state changes (progress, error, completion) on the upload task.
     uploadTask.on(
       'state_changed',
       (snapshot) => {
-        // Calculate and update upload progress
         const currentProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setProgress(currentProgress);
       },
       (uploadError: any) => {
-        // Handle unsuccessful uploads
+        // Handle unsuccessful uploads (e.g., permission denied, network error).
         console.error("Upload failed:", uploadError);
         setError(`Upload failed: ${uploadError.message || 'Unknown error'}`);
         setUploading(false);
       },
       async () => {
-        // Handle successful uploads on complete
+        // Handle successful uploads.
         try {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          setUrl(downloadURL); // Set the downloaded URL
-          onUploadSuccess(downloadURL); // Pass URL to parent component
-          setError(null);
+          setUrl(downloadURL); // Store the download URL
+          onUploadSuccess(downloadURL); // Call the parent's success callback
+          setError(null); // Clear errors
           console.log('File available at', downloadURL);
+
+          // Optionally clear the file input after successful upload
+          if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+          }
+          setFile(null); // Clear file state
         } catch (urlError: any) {
           setError(`Failed to get download URL: ${urlError.message || 'Unknown error'}`);
           console.error("Failed to get download URL:", urlError);
         } finally {
-          setUploading(false);
+          setUploading(false); // Always reset uploading state
         }
       }
     );
@@ -227,11 +132,15 @@ const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialIma
   return (
     <div className="space-y-4 p-4 border border-gray-700 rounded-lg bg-gray-700">
       <h3 className="text-lg font-semibold text-white">Profile Picture</h3>
-      {url && (
+      {url ? (
         <div className="flex flex-col items-center mb-4">
-          {/* Display current profile picture if available */}
           <img src={url} alt="HCP Avatar" className="w-24 h-24 rounded-full object-cover border-2 border-blue-400 shadow-lg" />
-          <p className="text-xs text-gray-400 break-all mt-2">{url}</p>
+          <p className="text-xs text-gray-400 break-all mt-2 text-center">{url}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-24 w-24 rounded-full bg-gray-600 border border-gray-500 text-gray-400 mx-auto mb-4">
+          <PhotoIcon className="h-10 w-10" />
+          <p className="text-xs mt-1">No Image</p>
         </div>
       )}
       <div>
@@ -243,6 +152,7 @@ const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialIma
           type="file"
           accept="image/*" // Only accept image files
           onChange={onPick}
+          ref={fileInputRef} // Attach ref to clear input
           className="block w-full text-sm text-gray-400
             file:mr-4 file:py-2 file:px-4
             file:rounded-full file:border-0
@@ -252,19 +162,18 @@ const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialIma
         />
       </div>
 
-      {file && (
+      {file && ( // Only show upload button if a file is selected
         <button
           className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-500 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed w-full"
           onClick={onUpload}
-          disabled={uploading} // Disable button during upload
+          disabled={uploading}
         >
           {uploading ? `Uploading ${Math.round(progress)}%...` : 'Upload Selected Image'}
         </button>
       )}
 
-      {progress > 0 && progress < 100 && (
+      {progress > 0 && progress < 100 && ( // Show progress bar during upload
         <div className="w-full bg-gray-600 rounded-full h-2.5 mt-2">
-          {/* Progress bar for upload */}
           <div
             className="bg-green-500 h-2.5 rounded-full"
             style={{ width: `${progress}%` }}
@@ -277,29 +186,18 @@ const UploadAvatar: React.FC<UploadAvatarProps> = ({ onUploadSuccess, initialIma
   );
 };
 
-
 // --- HCPForm Component ---
-// Form for creating or editing HCP profiles.
-interface HcpProfile {
-  id?: string; // Optional for new profiles
-  fullName: string;
-  primarySkill: string;
-  experienceYears: number;
-  bioSummary: string;
-  locationPreference: string;
-  profilePhotoUrl: string | null;
-  [key: string]: any; // Allow for other fields
-}
-
-interface HCPFormProps {
-  onSave: () => void; // Callback function after successful save
-  hcpToEdit?: HcpProfile | null; // Optional: HCP profile to pre-fill form for editing
-}
-
-const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
+/**
+ * @component HCPForm
+ * A form for creating or editing Home-Care Professional (HCP) profiles.
+ * @param {object} props
+ * @param {() => void} props.onSave - Callback function invoked after a successful save (create/update).
+ * @param {HcpProfile | null} [props.hcpToEdit] - Optional HCP profile object to pre-fill the form for editing.
+ */
+const HCPForm: React.FC<{ onSave: () => void; hcpToEdit?: HcpProfile | null; }> = ({ onSave, hcpToEdit }) => {
   const { db } = useFirebase(); // Get Firestore instance from Firebase context
   const [profile, setProfile] = useState<HcpProfile>(hcpToEdit || {
-    // Initialize profile state with empty values or data from hcpToEdit
+    // Initialize profile state with provided data for editing, or with empty defaults for new creation.
     fullName: '',
     primarySkill: '',
     experienceYears: 0,
@@ -307,16 +205,16 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
     locationPreference: '',
     profilePhotoUrl: null,
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false); // State for showing loading indicator during save
+  const [error, setError] = useState<string | null>(null); // State for error messages
+  const [success, setSuccess] = useState<string | null>(null); // State for success messages
 
-  // Update form fields when hcpToEdit prop changes (e.g., when editing a different HCP)
+  // Effect to update form fields when `hcpToEdit` prop changes (e.g., when selecting a different HCP to edit).
   useEffect(() => {
     if (hcpToEdit) {
       setProfile(hcpToEdit);
     } else {
-      // Reset form for new HCP creation
+      // Reset form to default values if no `hcpToEdit` is provided (for new profile creation).
       setProfile({
         fullName: '',
         primarySkill: '',
@@ -326,53 +224,68 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
         profilePhotoUrl: null,
       });
     }
-    setError(null); // Clear errors
-    setSuccess(null); // Clear success messages
+    setError(null); // Clear any previous errors
+    setSuccess(null); // Clear any previous success messages
   }, [hcpToEdit]);
 
-  // Handle form input changes
+  /**
+   * Generic handler for updating form input fields.
+   * @param {React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>} e - The change event from the input.
+   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    // Convert experienceYears to a number
-    setProfile(prev => ({ ...prev, [name]: name === 'experienceYears' ? Number(value) : value }));
+    setProfile(prev => ({
+      ...prev,
+      [name]: name === 'experienceYears' ? Number(value) : value // Convert 'experienceYears' to a number.
+    }));
   };
 
-  // Callback for successful photo upload from UploadAvatar component
+  /**
+   * Callback for when the UploadAvatar component successfully uploads an image.
+   * Updates the `profilePhotoUrl` in the current profile state.
+   * @param {string} url - The download URL of the uploaded image.
+   */
   const handlePhotoUploadSuccess = (url: string) => {
     setProfile(prev => ({ ...prev, profilePhotoUrl: url }));
     setSuccess("Profile picture uploaded successfully!");
   };
 
-  // Handle form submission (create or update HCP profile)
+  /**
+   * Handles the form submission for creating or updating an HCP profile.
+   * @param {React.FormEvent} e - The form submission event.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent default browser form submission (page reload)
+
     if (!db) {
-      setError("Database not initialized.");
+      setError("Database not initialized. Cannot save profile.");
       return;
     }
-    setLoading(true); // Set loading state
+    setLoading(true); // Activate loading state
     setError(null); // Clear previous errors
     setSuccess(null); // Clear previous success messages
 
     try {
-      const hcpProfilesCol = collection(db, 'hcpProfiles');
+      const hcpProfilesColRef = collection(db, 'hcpProfiles'); // Reference to the 'hcpProfiles' collection
+
       if (profile.id) {
-        // Update existing HCP profile
-        const hcpDocRef = doc(db, 'hcpProfiles', profile.id);
+        // If `profile.id` exists, it means we are updating an existing HCP profile.
+        const hcpDocRef = doc(db, 'hcpProfiles', profile.id); // Document reference for the specific HCP
+        // Use `setDoc` with `{ merge: true }` to update fields without overwriting the entire document.
         await setDoc(hcpDocRef, { ...profile, lastUpdated: new Date().toISOString() }, { merge: true });
         setSuccess("HCP profile updated successfully!");
       } else {
-        // Create new HCP profile
-        // Using `setDoc(doc(collection))` instead of `addDoc` to let Firestore generate ID but keep `doc()` for potential future custom ID logic
-        await setDoc(doc(hcpProfilesCol), { ...profile, dateCreated: new Date().toISOString(), internalStatus: "Pending Review" });
+        // If no `profile.id`, it means we are creating a new HCP profile.
+        // `setDoc(doc(hcpProfilesColRef))` allows Firestore to auto-generate a new unique ID for the document.
+        await setDoc(doc(hcpProfilesColRef), { ...profile, dateCreated: new Date().toISOString(), internalStatus: "Pending Review" });
         setSuccess("New HCP profile created successfully!");
       }
-      onSave(); // Call parent's onSave to refresh list
+      onSave(); // Invoke the `onSave` callback provided by the parent component (e.g., to refresh the list).
     } catch (err: any) {
       setError(`Failed to save profile: ${err.message}`);
       console.error("Error saving HCP profile:", err);
     } finally {
-      setLoading(false); // Reset loading state
+      setLoading(false); // Deactivate loading state
     }
   };
 
@@ -397,7 +310,8 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
             name="fullName"
             value={profile.fullName}
             onChange={handleChange}
-            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+            placeholder="John Doe"
             required
           />
         </div>
@@ -411,7 +325,8 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
             name="primarySkill"
             value={profile.primarySkill}
             onChange={handleChange}
-            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+            placeholder="Elderly Care, Childcare, Housekeeping"
             required
           />
         </div>
@@ -440,7 +355,8 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
             value={profile.bioSummary}
             onChange={handleChange}
             rows={4}
-            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+            placeholder="A brief summary of the HCP's background and experience."
             required
           />
         </div>
@@ -454,13 +370,14 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
             name="locationPreference"
             value={profile.locationPreference}
             onChange={handleChange}
-            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+            placeholder="Kampala, Entebbe, Wakiso"
             required
           />
         </div>
 
         {/* Error and Success Messages */}
-        {error && <p className="text-red-400 text-sm italic">{error}</p>}
+        {error && <p className="text-red-400 text-sm italic flex items-center gap-2"><XMarkIcon className="h-5 w-5"/> {error}</p>}
         {success && <p className="text-green-400 text-sm italic flex items-center gap-2"><CheckCircleIcon className="h-5 w-5"/> {success}</p>}
 
         {/* Submit Button */}
@@ -477,95 +394,130 @@ const HCPForm: React.FC<HCPFormProps> = ({ onSave, hcpToEdit }) => {
 };
 
 // --- AdminPage Component ---
-// The main admin panel page displaying HCPs and providing CRUD operations.
+/**
+ * @component AdminPage
+ * The main administrative panel for HomeLift HCPs.
+ * It handles admin login, displays a list of HCP profiles,
+ * and provides functionality to add, edit, and delete profiles.
+ */
 function AdminPage() {
-  const { currentUser, signInAdmin, signOutAdmin, db, isAuthReady } = useFirebase(); // Get Firebase context values
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [hcpList, setHcpList] = useState<HcpProfile[]>([]);
-  const [loadingHCPs, setLoadingHCPs] = useState(true);
-  const [selectedHCP, setSelectedHCP] = useState<HcpProfile | null>(null); // State to hold HCP being edited
-  const [showForm, setShowForm] = useState(false); // State to control form visibility
+  // Access Firebase services and authentication state from the `useFirebase` hook.
+  const { currentUser, signInAdmin, signOutAdmin, db, isAuthReady } = useFirebase();
+  const [email, setEmail] = useState(''); // State for admin login email input
+  const [password, setPassword] = useState(''); // State for admin login password input
+  const [loginError, setLoginError] = useState<string | null>(null); // State for displaying login errors
+  const [hcpList, setHcpList] = useState<HcpProfile[]>([]); // State to store the fetched list of HCP profiles
+  const [loadingHCPs, setLoadingHCPs] = useState(true); // State to indicate if HCPs are currently being loaded
+  const [selectedHCP, setSelectedHCP] = useState<HcpProfile | null>(null); // State to hold the HCP profile currently selected for editing
+  const [showForm, setShowForm] = useState(false); // State to control the visibility of the HCP creation/edit form
 
-  // Function to fetch HCP profiles from Firestore
+  /**
+   * Fetches the list of Home-Care Professional (HCP) profiles from Firestore.
+   */
   const fetchHCPs = async () => {
-    if (!db) return; // Ensure Firestore is initialized
-    setLoadingHCPs(true);
+    if (!db) {
+      console.error("Firestore DB is not initialized. Cannot fetch HCPs.");
+      return;
+    }
+    setLoadingHCPs(true); // Activate loading state for HCP list
     try {
-      const q = query(collection(db, 'hcpProfiles')); // Query the 'hcpProfiles' collection
-      const querySnapshot = await getDocs(q);
+      const q = query(collection(db, 'hcpProfiles')); // Create a query to get all documents from the 'hcpProfiles' collection
+      const querySnapshot = await getDocs(q); // Execute the query to get documents
+      // Map each document snapshot to an HcpProfile object, including its Firestore document ID.
       const hcps: HcpProfile[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as HcpProfile }));
-      setHcpList(hcps); // Update HCP list state
+      setHcpList(hcps); // Update the state with the fetched HCP list
       console.log("Fetched HCPs:", hcps);
     } catch (error: any) {
       console.error("Error fetching HCPs:", error);
-      setLoginError(`Failed to load HCPs: ${error.message}`); // Display error
+      setLoginError(`Failed to load HCPs: ${error.message}`); // Display error message to the user
     } finally {
-      setLoadingHCPs(false); // Reset loading state
+      setLoadingHCPs(false); // Deactivate loading state
     }
   };
 
-  // Effect hook to fetch HCPs when auth state changes or db becomes available
+  /**
+   * Effect hook to trigger fetching HCPs when Firebase authentication is ready,
+   * a user is logged in, and the Firestore DB instance is available.
+   */
   useEffect(() => {
     if (isAuthReady && currentUser && db) {
-      fetchHCPs(); // Fetch HCPs only if authenticated and db is ready
+      fetchHCPs(); // Fetch HCPs only if conditions are met
     } else if (isAuthReady && !currentUser) {
-      setLoadingHCPs(false); // If not authenticated, stop loading indicator
+      // If auth is ready but no user is logged in, stop the HCP loading indicator immediately.
+      setLoadingHCPs(false);
     }
-  }, [isAuthReady, currentUser, db]); // Dependencies for the effect
+  }, [isAuthReady, currentUser, db]); // Dependencies for this effect: runs when these values change.
 
-  // Handle admin login
+  /**
+   * Handles the form submission for admin login.
+   * @param {React.FormEvent} e - The form submission event.
+   */
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError(null);
+    e.preventDefault(); // Prevent default browser form submission
+    setLoginError(null); // Clear any previous login errors
     try {
-      await signInAdmin(email, password); // Call signInAdmin from context
-      setEmail(''); // Clear email field
-      setPassword(''); // Clear password field
+      await signInAdmin(email, password); // Attempt to sign in the admin user
+      setEmail(''); // Clear email input
+      setPassword(''); // Clear password input
     } catch (err: any) {
-      setLoginError(err.message); // Display login error
+      setLoginError(err.message); // Display authentication error messages
     }
   };
 
-  // Handle admin logout
+  /**
+   * Handles the admin logout process.
+   */
   const handleLogout = async () => {
-    await signOutAdmin(); // Call signOutAdmin from context
-    setHcpList([]); // Clear HCP list on logout
+    await signOutAdmin(); // Sign out the current user
+    // Reset relevant states after logout to clear UI data
+    setHcpList([]);
     setSelectedHCP(null);
     setShowForm(false);
   };
 
-  // Set HCP to edit and show the form
+  /**
+   * Sets the selected HCP profile for editing and displays the form.
+   * @param {HcpProfile} hcp - The HCP profile to be edited.
+   */
   const handleEditHCP = (hcp: HcpProfile) => {
     setSelectedHCP(hcp);
     setShowForm(true);
   };
 
-  // Handle deletion of an HCP profile
+  /**
+   * Handles the deletion of an HCP profile from Firestore.
+   * @param {string} hcpId - The ID of the HCP profile to delete.
+   */
   const handleDeleteHCP = async (hcpId: string) => {
-    // IMPORTANT: For production, replace `confirm` with a custom modal for better UX.
-    if (!db || !confirm("Are you sure you want to delete this HCP profile? This action cannot be undone.")) return;
-    setLoadingHCPs(true);
+    // IMPORTANT: For production, replace `window.confirm` with a custom, styled modal
+    // for a better user experience and consistent UI.
+    if (!db || !window.confirm("Are you sure you want to delete this HCP profile? This action cannot be undone.")) {
+      return; // If Firestore not ready or user cancels, exit.
+    }
+    setLoadingHCPs(true); // Activate loading state during deletion
     try {
-      await deleteDoc(doc(db, 'hcpProfiles', hcpId)); // Delete document from Firestore
-      fetchHCPs(); // Re-fetch list to update UI
+      await deleteDoc(doc(db, 'hcpProfiles', hcpId)); // Delete the document from Firestore
+      fetchHCPs(); // Re-fetch the HCP list to update the UI immediately
     } catch (error: any) {
       console.error("Error deleting HCP:", error);
-      setLoginError(`Failed to delete HCP: ${error.message}`);
+      setLoginError(`Failed to delete HCP: ${error.message}`); // Display deletion error
     } finally {
-      setLoadingHCPs(false);
+      setLoadingHCPs(false); // Deactivate loading state
     }
   };
 
-  // Callback function after form save (create/update)
+  /**
+   * Callback function executed after an HCP profile is successfully saved (created or updated)
+   * via the HCPForm. It hides the form and refreshes the HCP list.
+   */
   const handleFormSave = () => {
     setShowForm(false); // Hide the form
-    setSelectedHCP(null); // Clear selected HCP
-    fetchHCPs(); // Re-fetch HCP list
+    setSelectedHCP(null); // Clear the selected HCP
+    fetchHCPs(); // Re-fetch the HCP list to show the latest data
   };
 
-  // Render the loading spinner while Firebase auth state is being determined
+  // Render a full-screen loading spinner while Firebase authentication state is being determined.
+  // This prevents UI flicker before the user's login status is known.
   if (!isAuthReady) {
     return (
       <div className="fixed inset-0 bg-gray-950 flex items-center justify-center text-white text-xl">
@@ -574,12 +526,12 @@ function AdminPage() {
     );
   }
 
-  // Render the login form if no user is authenticated
+  // Render the admin login form if no user is currently authenticated (`currentUser` is null).
   if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950 p-8">
         <div className="p-8 bg-gray-800 rounded-xl shadow-2xl max-w-md w-full border border-gray-700">
-          <h1 className="text-3xl font-bold text-center text-blue-400 mb-6">Admin Login</h1>
+          <h1 className="text-3xl font-bold text-center text-blue-400 mb-6">HomeLift Admin Login</h1>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="admin-email">
@@ -590,7 +542,7 @@ function AdminPage() {
                 id="admin-email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+                className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
                 placeholder="admin@homelift.africa"
                 required
               />
@@ -604,7 +556,7 @@ function AdminPage() {
                 id="admin-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+                className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
                 placeholder="••••••••"
                 required
               />
@@ -612,7 +564,8 @@ function AdminPage() {
             {loginError && <p className="text-red-400 text-sm italic">{loginError}</p>}
             <button
               type="submit"
-              className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-xl w-full transition duration-300 transform hover:scale-105"
+              className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-xl w-full transition duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!email || !password}
             >
               Log In
             </button>
@@ -622,13 +575,13 @@ function AdminPage() {
     );
   }
 
-  // Main Admin Panel Content (rendered after successful login)
+  // Main Admin Panel Content (rendered after successful login).
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <header className="flex justify-between items-center mb-10 pb-4 border-b border-gray-700">
         <h1 className="text-4xl font-bold text-blue-400">HomeLift HCP Admin Panel</h1>
         <div className="flex items-center gap-4">
-          <span className="text-gray-300">Logged in as: {currentUser?.email}</span>
+          <span className="text-gray-300">Logged in as: <span className="font-semibold">{currentUser?.email}</span></span>
           <button
             onClick={handleLogout}
             className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-xl shadow-lg transition duration-300"
@@ -638,14 +591,14 @@ function AdminPage() {
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content Area Layout: Two columns for HCP list and the form. */}
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* HCP List / Dashboard */}
+        {/* HCP List / Dashboard Section (Left Column - takes 2/3 width on large screens) */}
         <div className="lg:col-span-2 p-6 bg-gray-800 rounded-xl shadow-lg border border-gray-700">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-white">Managed HCP Profiles</h2>
             <button
-              onClick={() => { setSelectedHCP(null); setShowForm(true); }}
+              onClick={() => { setSelectedHCP(null); setShowForm(true); }} // Reset selected HCP and show form for new entry.
               className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 shadow-md transition duration-300"
             >
               <PlusCircleIcon className="h-5 w-5" /> Add New HCP
@@ -659,17 +612,22 @@ function AdminPage() {
           ) : (
             <ul className="space-y-4">
               {hcpList.map(hcp => (
-                <li key={hcp.id} className="flex items-center justify-between bg-gray-700 p-4 rounded-lg shadow-sm border border-gray-600">
-                  <div className="flex items-center gap-4">
-                    {hcp.profilePhotoUrl && (
-                      <img src={hcp.profilePhotoUrl} alt={`${hcp.fullName}'s avatar`} className="w-12 h-12 rounded-full object-cover border border-blue-400" />
+                <li key={hcp.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-gray-700 p-4 rounded-lg shadow-sm border border-gray-600">
+                  <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                    {hcp.profilePhotoUrl ? (
+                      <img src={hcp.profilePhotoUrl} alt={`${hcp.fullName}'s avatar`} className="w-12 h-12 rounded-full object-cover border border-blue-400 flex-shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gray-600 border border-gray-500 flex items-center justify-center text-gray-400 flex-shrink-0">
+                        <PhotoIcon className="h-6 w-6" />
+                      </div>
                     )}
                     <div>
                       <p className="text-lg font-semibold text-white">{hcp.fullName}</p>
                       <p className="text-sm text-gray-300">{hcp.primarySkill} ({hcp.experienceYears} yrs)</p>
+                      <p className="text-xs text-gray-400">{hcp.locationPreference}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 self-end sm:self-center">
                     <button
                       onClick={() => handleEditHCP(hcp)}
                       className="text-blue-400 hover:text-blue-300 p-2 rounded-full hover:bg-gray-600 transition"
@@ -691,7 +649,7 @@ function AdminPage() {
           )}
         </div>
 
-        {/* Create/Edit HCP Form */}
+        {/* Create/Edit HCP Form Section (Right Column - takes 1/3 width on large screens) */}
         <div className="lg:col-span-1">
           {showForm && (
              <HCPForm onSave={handleFormSave} hcpToEdit={selectedHCP} />
@@ -708,6 +666,13 @@ function AdminPage() {
   );
 }
 
+/**
+ * @component AdminAppWrapper
+ * The default export for the `app/admin/page.tsx` route.
+ * It wraps the `AdminPage` component with the `FirebaseProvider`
+ * to ensure all Firebase services are initialized and available
+ * to the admin panel.
+ */
 export default function AdminAppWrapper() {
   return (
     <FirebaseProvider>
