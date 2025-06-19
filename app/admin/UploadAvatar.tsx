@@ -1,78 +1,119 @@
 "use client";
 
-import { useState, ChangeEvent } from "react";
-import { storage } from "@/lib/firebase";
+import { useState, useEffect, useRef, ChangeEvent } from "react";
+import { PhotoIcon } from "@heroicons/react/24/outline";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { useFirebase } from "@/lib/firebase/FirebaseContext";
 
-export default function UploadAvatar() {
-  const [file, setFile] = useState<File | null>(null);
-  const [progress, setProgress] = useState<number>(0);
-  const [url, setUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+/** props the parent form needs */
+export interface UploadAvatarProps {
+  onUploadSuccess: (url: string) => void;   // callback when upload finishes
+  initialImageUrl?: string | null;          // show existing image while editing
+}
 
-  function onPick(e: ChangeEvent<HTMLInputElement>) {
+const UploadAvatar: React.FC<UploadAvatarProps> = ({
+  onUploadSuccess,
+  initialImageUrl = null,
+}) => {
+  const { storage } = useFirebase();              // <- storage from context
+  const [file,      setFile]      = useState<File | null>(null);
+  const [progress,  setProgress]  = useState<number>(0);
+  const [url,       setUrl]       = useState<string | null>(initialImageUrl);
+  const [error,     setError]     = useState<string | null>(null);
+  const fileInputRef              = useRef<HTMLInputElement>(null);
+
+  /* sync external change of initialImageUrl (e.g. selecting another HCP) */
+  useEffect(() => { setUrl(initialImageUrl ?? null); }, [initialImageUrl]);
+
+  /* pick a new local file ------------------------------------------------ */
+  const onPick = (e: ChangeEvent<HTMLInputElement>) => {
     setError(null);
-    setUrl(null);
     setProgress(0);
     setFile(e.target.files?.[0] ?? null);
-  }
+  };
 
-  async function onUpload () {
-  if (!file) return
-
-  /* ① bail out early if storage is not initialised */
-  if (!storage) {
-    setError('Firebase Storage not initialised – check env vars / restart dev server')
-    return
-  }
-
-  /* ② continue with the upload */
-  const id      = crypto.randomUUID()
-  const fileRef = ref(storage, `hcp-avatars/${id}_${file.name}`)
-
-  const task = uploadBytesResumable(fileRef, file, { contentType: file.type })
-
-  task.on('state_changed',
-    snap => setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-    err  => setError(err.message),
-    async () => {
-      const url = await getDownloadURL(fileRef)
-      setUrl(url)                         // show the image or save it to Firestore
-      setFile(null); setProgress(0)
+  /* upload to Firebase Storage ------------------------------------------ */
+  const onUpload = async () => {
+    if (!file) return;
+    if (!storage) {                       // should never happen in normal flow
+      setError("Firebase Storage not initialised");
+      return;
     }
-  )
-}
-  return (
-    <div className="space-y-6 max-w-sm">
-      <input type="file" accept="image/*" onChange={onPick} />
 
-      {file && !url && (
+    const id      = crypto.randomUUID();
+    const fileRef = ref(storage, `hcp-avatars/${id}_${file.name}`);
+    const task    = uploadBytesResumable(fileRef, file, {
+      contentType: file.type,
+    });
+
+    task.on(
+      "state_changed",
+      snap => setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      err  => setError(err.message),
+      async () => {
+        const downloadURL = await getDownloadURL(fileRef);
+        setUrl(downloadURL);
+        onUploadSuccess(downloadURL);   // << notify parent form
+        /* tidy up local UI state */
+        setFile(null);
+        setProgress(0);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    );
+  };
+
+  /* -------------------------------------------------------------------- */
+  return (
+    <div className="space-y-4">
+      {/* file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={onPick}
+        className="file:mr-4 file:rounded-lg file:border-0
+                   file:bg-blue-600 file:px-4 file:py-2 file:text-white
+                   hover:file:bg-blue-500"
+      />
+
+      {/* upload button */}
+      {file && (
         <button
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500"
           onClick={onUpload}
+          disabled={!file}
+          className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white
+                     hover:bg-blue-500 disabled:opacity-40"
         >
-          Upload
+          {progress > 0 && progress < 100
+            ? `Uploading ${progress}%`
+            : "Upload"}
         </button>
       )}
 
+      {/* progress bar */}
       {progress > 0 && progress < 100 && (
-        <div className="w-full bg-gray-800 rounded">
+        <div className="h-2 w-full rounded bg-gray-700">
           <div
             style={{ width: `${progress}%` }}
-            className="h-2 bg-green-500 rounded"
+            className="h-full rounded bg-green-500"
           />
-          <p className="text-sm text-gray-300 mt-1">{progress}%</p>
         </div>
       )}
 
+      {/* preview / error */}
       {url && (
         <div className="space-y-2">
-          <img src={url} alt="Uploaded avatar" className="w-32 h-32 rounded-full object-cover" />
+          <img
+            src={url}
+            alt="HCP avatar"
+            className="h-28 w-28 rounded-full object-cover ring-2 ring-blue-400"
+          />
           <p className="break-all text-xs text-gray-400">{url}</p>
         </div>
       )}
-
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   );
-}
+};
+
+export default UploadAvatar;

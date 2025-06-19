@@ -1,21 +1,211 @@
-// app/admin/page.tsx
-// This file defines the main HomeLift HCP Admin Panel page.
+// HomeLift HCP Admin Panel - Unified Code for Canvas Environment
+// IMPORTANT: For your actual Next.js project, you MUST separate this code into multiple files
+// (e.g., FirebaseContext.tsx, app/admin/page.tsx) for proper modularity and compilation.
+// This unified structure is specifically for compilation within this Canvas environment.
 
-"use client"; // This directive indicates that this is a Client Component,
-             // enabling interactive features and client-side logic.
+"use client"; // This directive marks the component as a Client Component.
 
-import { useState, useEffect, useRef } from "react";
-import { collection, query, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'; // Firestore functions
-import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage'; // Storage functions
-// Import the FirebaseProvider and useFirebase hook from the dedicated context file.
-// Adjust the import path based on your actual project structure.
-// Example: if `app` and `lib` are siblings in your project root, the path might be `../../lib/firebase/FirebaseContext`.
-import { useFirebase, FirebaseProvider } from '../../lib/firebase/FirebaseContext';
+import { useState, useEffect, createContext, useContext, useRef } from "react";
+// Firebase App Initialization
+import { initializeApp, getApps, getApp, FirebaseOptions, FirebaseApp } from 'firebase/app';
+// Firebase Authentication
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
+// Firebase Firestore Database
+import { getFirestore, collection, query, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+// Firebase Cloud Storage
+import { getStorage, getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
+// Heroicons for UI icons
 import { XMarkIcon, PencilSquareIcon, TrashIcon, PlusCircleIcon, CheckCircleIcon, PhotoIcon } from "@heroicons/react/24/outline";
+
+// --- 1. Firebase Context and Provider ---
+// This section would typically be in src/lib/firebase/FirebaseContext.tsx in your Next.js project.
+
+/**
+ * @typedef FirebaseContextType
+ * @property {any | null} db - The Firestore database instance.
+ * @property {any | null} auth - The Firebase Authentication instance.
+ * @property {any | null} storage - The Firebase Cloud Storage instance.
+ * @property {User | null} currentUser - The currently authenticated Firebase User object, or null if not logged in.
+ * @property {string | null} userId - The UID of the current user, or null.
+ * @property {boolean} isAuthReady - True if Firebase's initial authentication state check is complete.
+ * @property {(email: string, password: string) => Promise<any>} signInAdmin - Function to sign in an admin user.
+ * @property {() => Promise<void>} signOutAdmin - Function to sign out the current admin user.
+ */
+type FirebaseContextType = {
+  db: any | null;
+  auth: any | null;
+  storage: any | null;
+  currentUser: User | null;
+  userId: string | null;
+  isAuthReady: boolean;
+  signInAdmin: (email: string, password: string) => Promise<any>;
+  signOutAdmin: () => Promise<void>;
+};
+
+/** Creates the React Context for Firebase. */
+const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
+
+/**
+ * Custom hook to easily access Firebase services from any component
+ * wrapped by the FirebaseProvider.
+ * @returns {FirebaseContextType} The Firebase context object.
+ * @throws {Error} If used outside of a FirebaseProvider.
+ */
+const useFirebase = () => { // Not exported as it's internal to this unified file
+  const context = useContext(FirebaseContext);
+  if (!context) {
+    throw new Error('useFirebase must be used within a FirebaseProvider.');
+  }
+  return context;
+};
+
+/**
+ * @interface LooseFirebaseOptions
+ * Represents the Firebase configuration object, allowing properties to be undefined.
+ * This is useful when reading directly from process.env, as values might not be set.
+ */
+interface LooseFirebaseOptions {
+  apiKey?: string;
+  authDomain?: string;
+  projectId?: string;
+  storageBucket?: string;
+  messagingSenderId?: string;
+  appId?: string;
+  measurementId?: string; // Optional: only if you use Google Analytics
+}
+
+/**
+ * Type guard to check if the provided configuration object is a valid FirebaseOptions object.
+ * It ensures all required properties are strings and not empty.
+ * @param {LooseFirebaseOptions} config - The configuration object to validate.
+ * @returns {boolean} True if the config is valid for Firebase initialization.
+ */
+function isValidFirebaseOptions(config: LooseFirebaseOptions): config is FirebaseOptions {
+  return (
+    typeof config.apiKey === 'string' && config.apiKey.length > 0 &&
+    typeof config.authDomain === 'string' && config.authDomain.length > 0 &&
+    typeof config.projectId === 'string' && config.projectId.length > 0 &&
+    typeof config.storageBucket === 'string' && config.storageBucket.length > 0 &&
+    typeof config.messagingSenderId === 'string' && config.messagingSenderId.length > 0 &&
+    typeof config.appId === 'string' && config.appId.length > 0
+  );
+}
+
+/**
+ * @component FirebaseProvider
+ * Provides Firebase service instances (Auth, Firestore, Storage) to its children.
+ * It initializes Firebase once and manages the user's authentication state.
+ * @param {React.PropsWithChildren} { children } - The child components to be rendered within the provider's scope.
+ */
+const FirebaseProvider = ({ children }: { children: React.ReactNode }) => { // Not exported, as it's used within this file's default export
+  const [db, setDb] = useState<any>(null);
+  const [auth, setAuth] = useState<any>(null);
+  const [storage, setStorage] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
+  useEffect(() => {
+    const rawFirebaseConfig: LooseFirebaseOptions = {
+      apiKey: typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_FIREBASE_API_KEY : undefined,
+      authDomain: typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN : undefined,
+      projectId: typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID : undefined,
+      storageBucket: typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET : undefined,
+      messagingSenderId: typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID : undefined,
+      appId: typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_FIREBASE_APP_ID : undefined,
+      measurementId: typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID : undefined,
+    };
+
+    if (!isValidFirebaseOptions(rawFirebaseConfig)) {
+      console.error(
+        "CRITICAL ERROR: Firebase environment variables are incomplete or invalid. " +
+        "Please ensure all required NEXT_PUBLIC_FIREBASE_* variables are set as non-empty strings " +
+        "in your .env.local (for local dev) or deployment environment variables." +
+        "Firebase functionality will be disabled."
+      );
+      setIsAuthReady(true);
+      setDb(null);
+      setAuth(null);
+      setStorage(null);
+      setCurrentUser(null);
+      setUserId(null);
+      return;
+    }
+
+    const firebaseConfig: FirebaseOptions = rawFirebaseConfig;
+    let firebaseAppInstance: FirebaseApp;
+
+    try {
+      if (getApps().length) {
+        firebaseAppInstance = getApp();
+      } else {
+        firebaseAppInstance = initializeApp(firebaseConfig);
+      }
+
+      const firestore = getFirestore(firebaseAppInstance);
+      const firebaseAuth = getAuth(firebaseAppInstance);
+      const firebaseStorage = getStorage(firebaseAppInstance);
+
+      setDb(firestore);
+      setAuth(firebaseAuth);
+      setStorage(firebaseStorage);
+
+      const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+        setCurrentUser(user);
+        setUserId(user ? user.uid : null);
+        setIsAuthReady(true);
+        console.log("Firebase Auth state changed. Current User:", user ? user.email : "None");
+      });
+
+      return () => unsubscribe();
+    } catch (error: any) {
+      console.error(
+        "Failed to initialize Firebase services. " +
+        "Please check your Firebase configuration and internet connection:",
+        error.message, error
+      );
+      setIsAuthReady(true);
+      setDb(null);
+      setAuth(null);
+      setStorage(null);
+    }
+  }, []);
+
+  const signInAdmin = async (email: string, password: string) => {
+    if (!auth) {
+      throw new Error("Firebase Auth service is not initialized. Cannot sign in.");
+    }
+    return await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const signOutAdmin = async () => {
+    if (!auth) {
+      throw new Error("Firebase Auth service is not initialized. Cannot sign out.");
+    }
+    await signOut(auth);
+  };
+
+  const contextValue = { db, auth, storage, currentUser, userId, isAuthReady, signInAdmin, signOutAdmin };
+
+  return (
+    <FirebaseContext.Provider value={contextValue}>
+      {!isAuthReady && (
+        <div className="fixed inset-0 bg-gray-950 flex items-center justify-center text-white text-xl z-50">
+          Loading Admin Application...
+        </div>
+      )}
+      {isAuthReady && children}
+    </FirebaseContext.Provider>
+  );
+};
+
+
+// --- 2. HCP Profile Interfaces and Components ---
+// This section would typically be part of app/admin/page.tsx or related components.
 
 /**
  * @interface HcpProfile
- * Defines the structure for a Home-Care Professional (HCP) profile.
+ * Defines the comprehensive structure for a Home-Care Professional (HCP) profile.
  */
 interface HcpProfile {
   id?: string; // Optional Firestore document ID for existing profiles
@@ -25,53 +215,66 @@ interface HcpProfile {
   bioSummary: string;
   locationPreference: string;
   profilePhotoUrl: string | null; // URL to their profile picture in Firebase Storage
-  // Allow for other flexible properties (e.g., internal status, creation date)
-  [key: string]: any;
+
+  // New Fields for Robust Vetting & Profile
+  dateOfBirth: string; // YYYY-MM-DD
+  gender: 'Male' | 'Female' | 'Other' | '';
+  maritalStatus: string;
+  nationality: string;
+  ninNumber: string; // National Identification Number
+  policeClearanceStatus: 'Cleared' | 'Pending' | 'Not Cleared' | '';
+  policeClearanceDate: string; // YYYY-MM-DD
+  healthStatus: string; // E.g., 'Good', 'Chronic Condition (details)'
+
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelationship: string;
+
+  secondarySkills: string; // Comma-separated or short phrases
+  specializedSkills: string; // Comma-separated certifications/specialties
+  employmentHistory: string; // Free-text for now, can be array of objects later
+  references: string; // Free-text for now, can be array of objects later
+
+  availability: 'Full-time' | 'Part-time' | 'Live-in' | 'Live-out' | '';
+  preferredWorkingHours: string; // E.g., 'Day', 'Night', 'Flexible'
+  hasDrivingLicense: boolean;
+  otherLanguages: string; // Comma-separated
+
+  internalNotes: string; // For admin staff only
+
+  [key: string]: any; // Allow for other flexible properties (e.g., internal status, creation date)
 }
 
-// --- UploadAvatar Component (Defined within page.tsx as per user request to keep it as an admin function) ---
 /**
  * @component UploadAvatar
  * Handles the selection and upload of an image file to Firebase Storage for an HCP's profile picture.
- * @param {object} props
- * @param {(url: string) => void} props.onUploadSuccess - Callback function invoked with the download URL upon successful upload.
- * @param {string | null} [props.initialImageUrl] - Optional initial image URL to display (for editing).
  */
 const UploadAvatar: React.FC<{ onUploadSuccess: (url: string) => void; initialImageUrl?: string | null; }> = ({ onUploadSuccess, initialImageUrl }) => {
-  const { storage } = useFirebase(); // Get Firebase Storage instance from context
-  const [file, setFile] = useState<File | null>(null); // State for the selected image file
-  const [url, setUrl] = useState<string | null>(initialImageUrl || null); // State for the uploaded image's URL
-  const [progress, setProgress] = useState(0); // State for upload progress percentage
-  const [error, setError] = useState<string | null>(null); // State for any upload errors
-  const [uploading, setUploading] = useState(false); // State to indicate if an upload is in progress
-  const fileInputRef = useRef<HTMLInputElement>(null); // Ref for the file input element
+  const { storage } = useFirebase();
+  const [file, setFile] = useState<File | null>(null);
+  const [url, setUrl] = useState<string | null>(initialImageUrl || null);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Effect to update the displayed image URL if the `initialImageUrl` prop changes (e.g., when editing a different HCP).
   useEffect(() => {
     if (initialImageUrl && initialImageUrl !== url) {
       setUrl(initialImageUrl);
     }
   }, [initialImageUrl, url]);
 
-  /**
-   * Handles the selection of a file from the input.
-   * Resets previous upload states.
-   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event from the file input.
-   */
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFile(null); // Clear previous file
-    setUrl(null); // Clear previous URL
+    setFile(null);
+    setUrl(null);
     setProgress(0);
     setError(null);
 
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]); // Store the selected file
+      setFile(e.target.files[0]);
     }
   };
 
-  /**
-   * Initiates the file upload process to Firebase Storage.
-   */
   const onUpload = async () => {
     if (!file) {
       setError("Please select a file first.");
@@ -83,16 +286,13 @@ const UploadAvatar: React.FC<{ onUploadSuccess: (url: string) => void; initialIm
       return;
     }
 
-    setUploading(true); // Set uploading state to true
-    setError(null); // Clear previous errors
-    setProgress(0); // Reset progress
+    setUploading(true);
+    setError(null);
+    setProgress(0);
 
-    // Create a unique storage reference path for the file in 'hcp_profile_pictures' folder.
-    // Using Date.now() for uniqueness, but in a real app, you might tie this to the HCP's Firestore ID.
     const storageRef = ref(storage, `hcp_profile_pictures/${Date.now()}_${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file); // Start the upload task
+    const uploadTask = uploadBytesResumable(storageRef, file);
 
-    // Listen for state changes (progress, error, completion) on the upload task.
     uploadTask.on(
       'state_changed',
       (snapshot) => {
@@ -100,30 +300,27 @@ const UploadAvatar: React.FC<{ onUploadSuccess: (url: string) => void; initialIm
         setProgress(currentProgress);
       },
       (uploadError: any) => {
-        // Handle unsuccessful uploads (e.g., permission denied, network error).
         console.error("Upload failed:", uploadError);
         setError(`Upload failed: ${uploadError.message || 'Unknown error'}`);
         setUploading(false);
       },
       async () => {
-        // Handle successful uploads.
         try {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          setUrl(downloadURL); // Store the download URL
-          onUploadSuccess(downloadURL); // Call the parent's success callback
-          setError(null); // Clear errors
+          setUrl(downloadURL);
+          onUploadSuccess(downloadURL);
+          setError(null);
           console.log('File available at', downloadURL);
 
-          // Optionally clear the file input after successful upload
           if (fileInputRef.current) {
             fileInputRef.current.value = "";
           }
-          setFile(null); // Clear file state
+          setFile(null);
         } catch (urlError: any) {
           setError(`Failed to get download URL: ${urlError.message || 'Unknown error'}`);
           console.error("Failed to get download URL:", urlError);
         } finally {
-          setUploading(false); // Always reset uploading state
+          setUploading(false);
         }
       }
     );
@@ -150,9 +347,9 @@ const UploadAvatar: React.FC<{ onUploadSuccess: (url: string) => void; initialIm
         <input
           id="file-upload"
           type="file"
-          accept="image/*" // Only accept image files
+          accept="image/*"
           onChange={onPick}
-          ref={fileInputRef} // Attach ref to clear input
+          ref={fileInputRef}
           className="block w-full text-sm text-gray-400
             file:mr-4 file:py-2 file:px-4
             file:rounded-full file:border-0
@@ -162,7 +359,7 @@ const UploadAvatar: React.FC<{ onUploadSuccess: (url: string) => void; initialIm
         />
       </div>
 
-      {file && ( // Only show upload button if a file is selected
+      {file && (
         <button
           className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-500 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed w-full"
           onClick={onUpload}
@@ -172,7 +369,7 @@ const UploadAvatar: React.FC<{ onUploadSuccess: (url: string) => void; initialIm
         </button>
       )}
 
-      {progress > 0 && progress < 100 && ( // Show progress bar during upload
+      {progress > 0 && progress < 100 && (
         <div className="w-full bg-gray-600 rounded-full h-2.5 mt-2">
           <div
             className="bg-green-500 h-2.5 rounded-full"
@@ -186,35 +383,48 @@ const UploadAvatar: React.FC<{ onUploadSuccess: (url: string) => void; initialIm
   );
 };
 
-// --- HCPForm Component ---
 /**
  * @component HCPForm
  * A form for creating or editing Home-Care Professional (HCP) profiles.
- * @param {object} props
- * @param {() => void} props.onSave - Callback function invoked after a successful save (create/update).
- * @param {HcpProfile | null} [props.hcpToEdit] - Optional HCP profile object to pre-fill the form for editing.
  */
 const HCPForm: React.FC<{ onSave: () => void; hcpToEdit?: HcpProfile | null; }> = ({ onSave, hcpToEdit }) => {
-  const { db } = useFirebase(); // Get Firestore instance from Firebase context
+  const { db } = useFirebase();
   const [profile, setProfile] = useState<HcpProfile>(hcpToEdit || {
-    // Initialize profile state with provided data for editing, or with empty defaults for new creation.
     fullName: '',
     primarySkill: '',
     experienceYears: 0,
     bioSummary: '',
     locationPreference: '',
     profilePhotoUrl: null,
+    dateOfBirth: '',
+    gender: '',
+    maritalStatus: '',
+    nationality: '',
+    ninNumber: '',
+    policeClearanceStatus: '',
+    policeClearanceDate: '',
+    healthStatus: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    emergencyContactRelationship: '',
+    secondarySkills: '',
+    specializedSkills: '',
+    employmentHistory: '',
+    references: '',
+    availability: '',
+    preferredWorkingHours: '',
+    hasDrivingLicense: false,
+    otherLanguages: '',
+    internalNotes: '',
   });
-  const [loading, setLoading] = useState(false); // State for showing loading indicator during save
-  const [error, setError] = useState<string | null>(null); // State for error messages
-  const [success, setSuccess] = useState<string | null>(null); // State for success messages
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  // Effect to update form fields when `hcpToEdit` prop changes (e.g., when selecting a different HCP to edit).
   useEffect(() => {
     if (hcpToEdit) {
       setProfile(hcpToEdit);
     } else {
-      // Reset form to default values if no `hcpToEdit` is provided (for new profile creation).
       setProfile({
         fullName: '',
         primarySkill: '',
@@ -222,70 +432,73 @@ const HCPForm: React.FC<{ onSave: () => void; hcpToEdit?: HcpProfile | null; }> 
         bioSummary: '',
         locationPreference: '',
         profilePhotoUrl: null,
+        dateOfBirth: '',
+        gender: '',
+        maritalStatus: '',
+        nationality: '',
+        ninNumber: '',
+        policeClearanceStatus: '',
+        policeClearanceDate: '',
+        healthStatus: '',
+        emergencyContactName: '',
+        emergencyContactPhone: '',
+        emergencyContactRelationship: '',
+        secondarySkills: '',
+        specializedSkills: '',
+        employmentHistory: '',
+        references: '',
+        availability: '',
+        preferredWorkingHours: '',
+        hasDrivingLicense: false,
+        otherLanguages: '',
+        internalNotes: '',
       });
     }
-    setError(null); // Clear any previous errors
-    setSuccess(null); // Clear any previous success messages
+    setError(null);
+    setSuccess(null);
   }, [hcpToEdit]);
 
-  /**
-   * Generic handler for updating form input fields.
-   * @param {React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>} e - The change event from the input.
-   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target as HTMLInputElement;
     setProfile(prev => ({
       ...prev,
-      [name]: name === 'experienceYears' ? Number(value) : value // Convert 'experienceYears' to a number.
+      [name]: type === 'checkbox' ? checked : (name === 'experienceYears' ? Number(value) : value)
     }));
   };
 
-  /**
-   * Callback for when the UploadAvatar component successfully uploads an image.
-   * Updates the `profilePhotoUrl` in the current profile state.
-   * @param {string} url - The download URL of the uploaded image.
-   */
   const handlePhotoUploadSuccess = (url: string) => {
     setProfile(prev => ({ ...prev, profilePhotoUrl: url }));
     setSuccess("Profile picture uploaded successfully!");
   };
 
-  /**
-   * Handles the form submission for creating or updating an HCP profile.
-   * @param {React.FormEvent} e - The form submission event.
-   */
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent default browser form submission (page reload)
+    e.preventDefault();
 
     if (!db) {
       setError("Database not initialized. Cannot save profile.");
       return;
     }
-    setLoading(true); // Activate loading state
-    setError(null); // Clear previous errors
-    setSuccess(null); // Clear previous success messages
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
 
     try {
-      const hcpProfilesColRef = collection(db, 'hcpProfiles'); // Reference to the 'hcpProfiles' collection
+      const hcpProfilesColRef = collection(db, 'hcpProfiles');
 
       if (profile.id) {
-        // If `profile.id` exists, it means we are updating an existing HCP profile.
-        const hcpDocRef = doc(db, 'hcpProfiles', profile.id); // Document reference for the specific HCP
-        // Use `setDoc` with `{ merge: true }` to update fields without overwriting the entire document.
+        const hcpDocRef = doc(db, 'hcpProfiles', profile.id);
         await setDoc(hcpDocRef, { ...profile, lastUpdated: new Date().toISOString() }, { merge: true });
         setSuccess("HCP profile updated successfully!");
       } else {
-        // If no `profile.id`, it means we are creating a new HCP profile.
-        // `setDoc(doc(hcpProfilesColRef))` allows Firestore to auto-generate a new unique ID for the document.
         await setDoc(doc(hcpProfilesColRef), { ...profile, dateCreated: new Date().toISOString(), internalStatus: "Pending Review" });
         setSuccess("New HCP profile created successfully!");
       }
-      onSave(); // Invoke the `onSave` callback provided by the parent component (e.g., to refresh the list).
+      onSave();
     } catch (err: any) {
       setError(`Failed to save profile: ${err.message}`);
       console.error("Error saving HCP profile:", err);
     } finally {
-      setLoading(false); // Deactivate loading state
+      setLoading(false);
     }
   };
 
@@ -301,52 +514,316 @@ const HCPForm: React.FC<{ onSave: () => void; hcpToEdit?: HcpProfile | null; }> 
           initialImageUrl={profile.profilePhotoUrl}
         />
 
-        {/* Full Name Input */}
-        <div>
-          <label htmlFor="fullName" className="block text-gray-300 text-sm font-bold mb-2">Full Name</label>
-          <input
-            type="text"
-            id="fullName"
-            name="fullName"
-            value={profile.fullName}
-            onChange={handleChange}
-            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
-            placeholder="John Doe"
-            required
-          />
+        {/* BASIC INFORMATION */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="fullName" className="block text-gray-300 text-sm font-bold mb-2">Full Name</label>
+            <input
+              type="text"
+              id="fullName"
+              name="fullName"
+              value={profile.fullName}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="John Doe"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="dateOfBirth" className="block text-gray-300 text-sm font-bold mb-2">Date of Birth</label>
+            <input
+              type="date"
+              id="dateOfBirth"
+              name="dateOfBirth"
+              value={profile.dateOfBirth}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="gender" className="block text-gray-300 text-sm font-bold mb-2">Gender</label>
+            <select
+              id="gender"
+              name="gender"
+              value={profile.gender}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+              required
+            >
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="maritalStatus" className="block text-gray-300 text-sm font-bold mb-2">Marital Status</label>
+            <input
+              type="text"
+              id="maritalStatus"
+              name="maritalStatus"
+              value={profile.maritalStatus}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="Single, Married, Divorced, etc."
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="nationality" className="block text-gray-300 text-sm font-bold mb-2">Nationality</label>
+            <input
+              type="text"
+              id="nationality"
+              name="nationality"
+              value={profile.nationality}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="Ugandan"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="ninNumber" className="block text-gray-300 text-sm font-bold mb-2">NIN Number</label>
+            <input
+              type="text"
+              id="ninNumber"
+              name="ninNumber"
+              value={profile.ninNumber}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="CMXXXXXXXXXX"
+              required
+            />
+          </div>
         </div>
 
-        {/* Primary Skill Input */}
-        <div>
-          <label htmlFor="primarySkill" className="block text-gray-300 text-sm font-bold mb-2">Primary Skill</label>
-          <input
-            type="text"
-            id="primarySkill"
-            name="primarySkill"
-            value={profile.primarySkill}
-            onChange={handleChange}
-            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
-            placeholder="Elderly Care, Childcare, Housekeeping"
-            required
-          />
+        {/* VETTING & HEALTH INFORMATION */}
+        <h3 className="text-xl font-semibold text-white mt-8 mb-4 border-t border-gray-700 pt-6">Vetting & Health Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="policeClearanceStatus" className="block text-gray-300 text-sm font-bold mb-2">Police Clearance Status</label>
+            <select
+              id="policeClearanceStatus"
+              name="policeClearanceStatus"
+              value={profile.policeClearanceStatus}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+              required
+            >
+              <option value="">Select Status</option>
+              <option value="Cleared">Cleared</option>
+              <option value="Pending">Pending</option>
+              <option value="Not Cleared">Not Cleared</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="policeClearanceDate" className="block text-gray-300 text-sm font-bold mb-2">Police Clearance Date</label>
+            <input
+              type="date"
+              id="policeClearanceDate"
+              name="policeClearanceDate"
+              value={profile.policeClearanceDate}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label htmlFor="healthStatus" className="block text-gray-300 text-sm font-bold mb-2">Health Status / Medical Notes</label>
+            <textarea
+              id="healthStatus"
+              name="healthStatus"
+              value={profile.healthStatus}
+              onChange={handleChange}
+              rows={3}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="Any known health conditions, allergies, or medical notes relevant to their work."
+            />
+          </div>
         </div>
 
-        {/* Experience Years Input */}
-        <div>
-          <label htmlFor="experienceYears" className="block text-gray-300 text-sm font-bold mb-2">Experience (Years)</label>
-          <input
-            type="number"
-            id="experienceYears"
-            name="experienceYears"
-            value={profile.experienceYears}
-            onChange={handleChange}
-            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
-            required
-            min="0"
-          />
+        {/* EMERGENCY CONTACT */}
+        <h3 className="text-xl font-semibold text-white mt-8 mb-4 border-t border-gray-700 pt-6">Emergency Contact</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="emergencyContactName" className="block text-gray-300 text-sm font-bold mb-2">Contact Name</label>
+            <input
+              type="text"
+              id="emergencyContactName"
+              name="emergencyContactName"
+              value={profile.emergencyContactName}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="Jane Doe"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="emergencyContactPhone" className="block text-gray-300 text-sm font-bold mb-2">Contact Phone</label>
+            <input
+              type="tel" // Use type="tel" for phone numbers
+              id="emergencyContactPhone"
+              name="emergencyContactPhone"
+              value={profile.emergencyContactPhone}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="+2567XXXXXXXX"
+              required
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label htmlFor="emergencyContactRelationship" className="block text-gray-300 text-sm font-bold mb-2">Relationship</label>
+            <input
+              type="text"
+              id="emergencyContactRelationship"
+              name="emergencyContactRelationship"
+              value={profile.emergencyContactRelationship}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="Mother, Spouse, Sibling"
+              required
+            />
+          </div>
         </div>
 
-        {/* Bio Summary Textarea */}
+        {/* SKILLS & EXPERIENCE */}
+        <h3 className="text-xl font-semibold text-white mt-8 mb-4 border-t border-gray-700 pt-6">Skills & Experience</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="primarySkill" className="block text-gray-300 text-sm font-bold mb-2">Primary Skill</label>
+            <input
+              type="text"
+              id="primarySkill"
+              name="primarySkill"
+              value={profile.primarySkill}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="Elderly Care, Childcare, Housekeeping"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="experienceYears" className="block text-gray-300 text-sm font-bold mb-2">Experience (Years)</label>
+            <input
+              type="number"
+              id="experienceYears"
+              name="experienceYears"
+              value={profile.experienceYears}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+              required
+              min="0"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label htmlFor="secondarySkills" className="block text-gray-300 text-sm font-bold mb-2">Secondary Skills (comma-separated)</label>
+            <input
+              type="text"
+              id="secondarySkills"
+              name="secondarySkills"
+              value={profile.secondarySkills}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="Cooking, Cleaning, Driving"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label htmlFor="specializedSkills" className="block text-gray-300 text-sm font-bold mb-2">Specialized Skills / Certifications (comma-separated)</label>
+            <input
+              type="text"
+              id="specializedSkills"
+              name="specializedSkills"
+              value={profile.specializedSkills}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="First Aid Certified, Care for Elderly, Infant Care"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label htmlFor="employmentHistory" className="block text-gray-300 text-sm font-bold mb-2">Employment History</label>
+            <textarea
+              id="employmentHistory"
+              name="employmentHistory"
+              value={profile.employmentHistory}
+              onChange={handleChange}
+              rows={5}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="List previous employers, roles, and dates. E.g., 'Employer ABC, Maid, 2020-2022. Responsibilities: cooking, cleaning...'"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label htmlFor="references" className="block text-gray-300 text-sm font-bold mb-2">References</label>
+            <textarea
+              id="references"
+              name="references"
+              value={profile.references}
+              onChange={handleChange}
+              rows={3}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="List professional references with contact information. E.g., 'Name: John Smith, Relationship: Former Employer, Phone: +2567...'"
+            />
+          </div>
+        </div>
+
+        {/* AVAILABILITY & PREFERENCES */}
+        <h3 className="text-xl font-semibold text-white mt-8 mb-4 border-t border-gray-700 pt-6">Availability & Preferences</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="availability" className="block text-gray-300 text-sm font-bold mb-2">Availability</label>
+            <select
+              id="availability"
+              name="availability"
+              value={profile.availability}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+              required
+            >
+              <option value="">Select Availability</option>
+              <option value="Full-time">Full-time</option>
+              <option value="Part-time">Part-time</option>
+              <option value="Live-in">Live-in</option>
+              <option value="Live-out">Live-out</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="preferredWorkingHours" className="block text-gray-300 text-sm font-bold mb-2">Preferred Working Hours</label>
+            <input
+              type="text"
+              id="preferredWorkingHours"
+              name="preferredWorkingHours"
+              value={profile.preferredWorkingHours}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="Day, Night, Flexible, 8 AM - 5 PM"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2 flex items-center mt-2">
+            <input
+              type="checkbox"
+              id="hasDrivingLicense"
+              name="hasDrivingLicense"
+              checked={profile.hasDrivingLicense}
+              onChange={handleChange}
+              className="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 bg-gray-700"
+            />
+            <label htmlFor="hasDrivingLicense" className="ml-2 text-gray-300 text-sm font-bold">Has Driving License</label>
+          </div>
+          <div className="col-span-1 md:col-span-2">
+            <label htmlFor="otherLanguages" className="block text-gray-300 text-sm font-bold mb-2">Other Languages (comma-separated)</label>
+            <input
+              type="text"
+              id="otherLanguages"
+              name="otherLanguages"
+              value={profile.otherLanguages}
+              onChange={handleChange}
+              className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+              placeholder="Luganda, Swahili, French"
+            />
+          </div>
+        </div>
+
+        {/* BIO SUMMARY & LOCATION */}
+        <h3 className="text-xl font-semibold text-white mt-8 mb-4 border-t border-gray-700 pt-6">Bio & Location</h3>
         <div>
           <label htmlFor="bioSummary" className="block text-gray-300 text-sm font-bold mb-2">Bio Summary</label>
           <textarea
@@ -360,8 +837,6 @@ const HCPForm: React.FC<{ onSave: () => void; hcpToEdit?: HcpProfile | null; }> 
             required
           />
         </div>
-
-        {/* Location Preference Input */}
         <div>
           <label htmlFor="locationPreference" className="block text-gray-300 text-sm font-bold mb-2">Location Preference</label>
           <input
@@ -375,6 +850,22 @@ const HCPForm: React.FC<{ onSave: () => void; hcpToEdit?: HcpProfile | null; }> 
             required
           />
         </div>
+
+        {/* INTERNAL ADMIN NOTES */}
+        <h3 className="text-xl font-semibold text-white mt-8 mb-4 border-t border-gray-700 pt-6">Internal Admin Notes</h3>
+        <div>
+          <label htmlFor="internalNotes" className="block text-gray-300 text-sm font-bold mb-2">Internal Notes (Only visible to HomeLift Admin)</label>
+          <textarea
+            id="internalNotes"
+            name="internalNotes"
+            value={profile.internalNotes}
+            onChange={handleChange}
+            rows={4}
+            className="shadow appearance-none border rounded-xl w-full py-3 px-4 text-gray-900 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 placeholder-gray-400"
+            placeholder="Add any internal notes about the HCP, vetting details, performance, etc."
+          />
+        </div>
+
 
         {/* Error and Success Messages */}
         {error && <p className="text-red-400 text-sm italic flex items-center gap-2"><XMarkIcon className="h-5 w-5"/> {error}</p>}
@@ -575,7 +1066,6 @@ function AdminPage() {
     );
   }
 
-  // Main Admin Panel Content (rendered after successful login).
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <header className="flex justify-between items-center mb-10 pb-4 border-b border-gray-700">
@@ -591,14 +1081,12 @@ function AdminPage() {
         </div>
       </header>
 
-      {/* Main Content Area Layout: Two columns for HCP list and the form. */}
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* HCP List / Dashboard Section (Left Column - takes 2/3 width on large screens) */}
         <div className="lg:col-span-2 p-6 bg-gray-800 rounded-xl shadow-lg border border-gray-700">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-white">Managed HCP Profiles</h2>
             <button
-              onClick={() => { setSelectedHCP(null); setShowForm(true); }} // Reset selected HCP and show form for new entry.
+              onClick={() => { setSelectedHCP(null); setShowForm(true); }}
               className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 shadow-md transition duration-300"
             >
               <PlusCircleIcon className="h-5 w-5" /> Add New HCP
@@ -625,6 +1113,7 @@ function AdminPage() {
                       <p className="text-lg font-semibold text-white">{hcp.fullName}</p>
                       <p className="text-sm text-gray-300">{hcp.primarySkill} ({hcp.experienceYears} yrs)</p>
                       <p className="text-xs text-gray-400">{hcp.locationPreference}</p>
+                      
                     </div>
                   </div>
                   <div className="flex gap-2 self-end sm:self-center">
@@ -649,7 +1138,6 @@ function AdminPage() {
           )}
         </div>
 
-        {/* Create/Edit HCP Form Section (Right Column - takes 1/3 width on large screens) */}
         <div className="lg:col-span-1">
           {showForm && (
              <HCPForm onSave={handleFormSave} hcpToEdit={selectedHCP} />
@@ -666,13 +1154,7 @@ function AdminPage() {
   );
 }
 
-/**
- * @component AdminAppWrapper
- * The default export for the `app/admin/page.tsx` route.
- * It wraps the `AdminPage` component with the `FirebaseProvider`
- * to ensure all Firebase services are initialized and available
- * to the admin panel.
- */
+// Default export for the Next.js page, wrapping AdminPage with FirebaseProvider.
 export default function AdminAppWrapper() {
   return (
     <FirebaseProvider>
