@@ -1069,7 +1069,7 @@ function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <header className="flex justify-between items-center mb-10 pb-4 border-b border-gray-700">
-        <h1 className="text-4xl font-bold text-blue-400">HomeLift HCP Admin Panel</h1>
+        <h1 className="text-4xl font-bold text-green-400">HomeLift HCP Admin Panel</h1>
         <div className="flex items-center gap-4">
           <span className="text-gray-300">Logged in as: <span className="font-semibold">{currentUser?.email}</span></span>
           <button
