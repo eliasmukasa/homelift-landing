@@ -8,7 +8,7 @@ import { Mail, Phone, MapPin, Linkedin, Link, Briefcase, GraduationCap, Award, L
 // Resume data structure augmented for the new layout and content
 const resumeData = {
   name: "Elias M. Kizito",
-  tagline: "Strategic Enterprise Sales Executive | Client Partnerships | I.T & Telecom Tech Leader",
+  tagline: "Strategic Account Management | Enterprise Sales | Client Partnerships | I.T & Telecom | Tech Leader & AI Enthusiast",
   professionalPhoto: "https://res.cloudinary.com/dtrnpryf8/image/upload/v1750329381/prof-pic-ellz_iqnmhu.jpg", // Placeholder for Elias's professional photo. Replace with your actual photo URL!
   contact: {
     address: "Atlanta GA, Boston MA",
@@ -61,7 +61,7 @@ const resumeData = {
     "Accelerated a new enterprise account from $0 to $4.5M ARR in 12 months by spearheading a consultative sales strategy aligned with client transformation goals, demonstrating exceptional client acquisition and value creation.",
     "Surpassed annual quota by 30% YoY, consistently driving both new client acquisition and robust retention across a Fortune 500 portfolio through proactive client engagement and strategic account management.",
     "Closed $9M+ in long-term strategic contracts through deep executive engagement and consultative bid leadership, ensuring alignment of complex solutions with enterprise transformation objectives.",
-    "Secured $6M+ in enterprise agreements with global clients across Telecom and IT sectors, consistently identifying and cultivating high-value partnership opportunities.",
+    "Secured $6M+ in enterprise agreements with global clients across Telecom and IT.",
   ],
   workHistory: [
     {
@@ -180,237 +180,249 @@ export default function EliasKizitoResumePage() {
   console.log("Rendering EliasKizitoResumePage component.");
 
   return (
-    <div className="font-inter antialiased bg-gray-900 text-gray-300 min-h-screen p-4 sm:p-8 flex items-center justify-center">
-      <div className="max-w-6xl w-full bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-700 flex flex-col lg:flex-row">
+    <div className="font-inter antialiased bg-gray-900 text-gray-300 min-h-screen p-4 sm:p-8 flex flex-col items-center">
+      <div className="max-w-7xl xl:max-w-screen-xl w-full bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-700">
+        {/* Header Section (Full Width) */}
+        <header className="p-6 sm:p-8 bg-gradient-to-br from-blue-800 to-purple-900 text-white flex flex-col items-center text-center gap-6 relative overflow-hidden rounded-t-3xl">
+            
+          {/* Background overlay effect */}
+          <div className="absolute inset-0 bg-white opacity-5 mix-blend-overlay pointer-events-none"></div>
 
-        {/* Sidebar (Left Column on Large Screens) */}
-        <aside className="lg:w-1/3 bg-gray-900 p-6 sm:p-8 flex flex-col gap-8 border-b lg:border-b-0 lg:border-r border-gray-700">
-          {/* Profile Photo */}
-          <div className="flex flex-col items-center text-center mb-4">
-            <img
-              src={resumeData.professionalPhoto}
-              alt={`${resumeData.name}'s professional photo`}
-              className="w-32 h-32 rounded-full object-cover border-4 border-blue-400 shadow-lg mb-4"
-            />
-            <h1 className="text-3xl font-extrabold tracking-tight leading-tight text-white">
-              {resumeData.name}
-            </h1>
-            <p className="text-lg font-semibold text-blue-100">{resumeData.tagline}</p>
+          <img
+            src={resumeData.professionalPhoto}
+            alt={`${resumeData.name}'s professional photo`}
+            className="w-34 h-34 rounded-full object-cover border-4 border-blue-400 shadow-lg mb-4 transform hover:scale-105 transition-transform duration-300 ease-out"
+          />
+
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight drop-shadow-lg z-10">
+            {resumeData.name}
+          </h1>
+          <p className="text-xl sm:text-2xl font-semibold text-blue-100 max-w-2xl z-10">
+            {resumeData.tagline}
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-4 mt-6 z-10">
+            <a href={`mailto:${resumeData.contact.email}`} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 transition duration-300 rounded-full px-5 py-2 font-bold text-lg shadow-md transform hover:scale-105">
+              <Mail className="h-6 w-6" /> Email Me
+            </a>
+            <a href={resumeData.contact.linkedin.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 transition duration-300 rounded-full px-5 py-2 font-bold text-lg shadow-md transform hover:scale-105">
+              <Linkedin className="h-6 w-6" /> LinkedIn
+            </a>
+            <a href={`tel:${resumeData.contact.phone}`} className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 transition duration-300 rounded-full px-5 py-2 font-bold text-lg shadow-md transform hover:scale-105">
+              <Phone className="h-6 w-6" /> Call Me
+            </a>
           </div>
+          <p className="text-sm text-blue-200 mt-2 flex items-center gap-2">
+            <MapPin className="h-4 w-4" /> {resumeData.contact.address}
+          </p>
+        </header>
 
-          {/* Contact Information */}
-          <section className="bg-gray-800 p-6 rounded-xl shadow-inner border border-gray-700">
-            <h2 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2"><User className="h-5 w-5"/> Contact Me</h2>
-            <ul className="space-y-3 text-gray-300">
-              {/* Location is still text */}
-              <li className="flex items-center gap-3 p-2 rounded-lg bg-gray-700 hover:bg-gray-600 border border-gray-600 transition duration-200">
-                <MapPin className="h-6 w-6 text-blue-300 flex-shrink-0" />
-                <span className="flex-grow">{resumeData.contact.address}</span>
-              </li>
-              {/* Phone Icon Link */}
-              <li className="flex items-center">
-                <a
-                  href={`tel:${resumeData.contact.phone}`}
-                  aria-label="Call Elias"
-                  className="flex items-center justify-center p-3 w-full rounded-lg bg-gray-700 hover:bg-gray-600 border border-gray-600 transition duration-200 group"
-                >
-                  <Phone className="h-8 w-8 text-blue-300 group-hover:text-white transition-colors" />
-                </a>
-              </li>
-              {/* Email Icon Link */}
-              <li className="flex items-center">
-                <a
-                  href={`mailto:${resumeData.contact.email}`}
-                  aria-label="Email Elias"
-                  className="flex items-center justify-center p-3 w-full rounded-lg bg-gray-700 hover:bg-gray-600 border border-gray-600 transition duration-200 group"
-                >
-                  <Mail className="h-8 w-8 text-blue-300 group-hover:text-white transition-colors" />
-                </a>
-              </li>
-              {/* LinkedIn Icon Link */}
-              <li className="flex items-center">
-                <a
-                  href={resumeData.contact.linkedin.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Elias's LinkedIn Profile"
-                  className="flex items-center justify-center p-3 w-full rounded-lg bg-gray-700 hover:bg-gray-600 border border-gray-600 transition duration-200 group"
-                >
-                  <Linkedin className="h-8 w-8 text-blue-300 group-hover:text-white transition-colors" />
-                </a>
-              </li>
-            </ul>
-          </section>
+        {/* Main Content Area (Two Columns) */}
+        <div
+            className="
+                grid
+                grid-cols-1
+                /* ≥1024 px: sidebar = clamp(260 px,30%,360 px) */
+                lg:grid-cols-[clamp(260px,30%,360px)_1fr]
+ 
+                /* ≥1440 px: sidebar can grow a bit more but caps at 400 px */
+                2xl:grid-cols-[clamp(300px,26%,400px)_1fr]
+ 
+                gap-x-8 lg:gap-x-12 xl:gap-x-16
+                border-t border-gray-700
+            ">
+    {/* Added border-t to separate from header */}
+          {/* Sidebar (Left Column on Large Screens) */}
+          <aside className="bg-gray-900 p-6 sm:p-8 space-y-8 min-w-[340px]">
 
-          {/* Key Strengths */}
-          <section className="bg-gray-800 p-6 rounded-xl shadow-inner border border-gray-700">
-            <h2 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2"><Lightbulb className="h-5 w-5"/> Key Strengths</h2>
-            <ul className="list-disc list-inside space-y-2 text-gray-300">
-              {resumeData.keyStrengths.map((strength, index) => (
-                <li key={index}>{strength}</li>
-              ))}
-            </ul>
-          </section>
 
-          {/* Education Section (Moved up) */}
-          <section className="bg-gray-800 p-6 rounded-xl shadow-inner border border-gray-700">
-            <h2 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2"><GraduationCap className="h-5 w-5"/> Education</h2>
-            <div className="space-y-4">
-              {resumeData.education.map((edu, index) => (
-                <div key={index} className="text-gray-300">
-                  <h3 className="text-lg font-semibold text-white">{edu.degree}</h3>
-                  <p className="text-md text-gray-200">{edu.institution}</p>
-                  {edu.location && <p className="text-sm text-gray-400">{edu.location}</p>}
-                  {edu.period && <p className="text-sm text-gray-400">{edu.period}</p>}
-                </div>
-              ))}
-            </div>
-          </section>
+            {/* Key Strengths */}
+            <section className="bg-gray-800 p-6 rounded-xl shadow-inner border border-gray-700">
+              <h2 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2"><Lightbulb className="h-5 w-5"/> Key Strengths</h2>
+              <ul className="list-disc list-inside space-y-2 text-gray-300">
+                {resumeData.keyStrengths.map((strength, index) => (
+                  <li key={index}>{strength}</li>
+                ))}
+              </ul>
+            </section>
 
-          {/* Certifications Section (Moved up) */}
-          <section className="bg-gray-800 p-6 rounded-xl shadow-inner border border-gray-700">
-            <h2 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2"><Award className="h-5 w-5"/> Certifications</h2>
-            <div className="space-y-4">
-              {resumeData.certifications.map((cert, index) => (
-                <a
-                  key={index}
-                  href={cert.verificationUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 group"
-                >
-                  {cert.badgeUrl && (
-                    <img src={cert.badgeUrl} alt={`${cert.name} badge`} className="w-12 h-12 object-contain rounded-lg flex-shrink-0" />
-                  )}
-                  <div>
-                    <h3 className="text-base font-semibold text-white group-hover:text-blue-300 transition-colors">{cert.name}</h3>
-                    <p className="text-xs text-gray-400">{cert.issuingBody}</p>
+            {/* Education Section */}
+            <section className="bg-gray-800 p-6 rounded-xl shadow-inner border border-gray-700">
+              <h2 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2"><GraduationCap className="h-5 w-5"/> Education</h2>
+              <div className="space-y-4">
+                {resumeData.education.map((edu, index) => (
+                  <div key={index} className="text-gray-300">
+                    <h3 className="text-lg font-semibold text-white">{edu.degree}</h3>
+                    <p className="text-md text-gray-200">{edu.institution}</p>
+                    {edu.location && <p className="text-sm text-gray-400">{edu.location}</p>}
+                    {edu.period && <p className="text-sm text-gray-400">{edu.period}</p>}
                   </div>
-                  <Link className="ml-auto w-4 h-4 text-gray-400 group-hover:text-blue-300 transition-colors" />
-                </a>
-              ))}
-            </div>
-          </section>
-
-          {/* Skills Section (Moved to last in sidebar) */}
-          <section className="bg-gray-800 p-6 rounded-xl shadow-inner border border-gray-700">
-            <h2 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2"><Briefcase className="h-5 w-5"/> Skills</h2>
-            {['technical', 'business', 'soft'].map(category => (
-              <div key={category} className="mb-4 last:mb-0">
-                <h3 className="text-lg font-semibold text-gray-200 capitalize mb-2">{category}</h3>
-                <div className="flex flex-wrap gap-2">
-                  {resumeData.skills[category as keyof typeof resumeData.skills].map((skill, index) => (
-                    <span key={index} className="bg-gray-700 text-gray-300 text-sm px-3 py-1 rounded-full border border-gray-600">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
+                ))}
               </div>
-            ))}
-          </section>
-        </aside>
+            </section>
 
-        {/* Main Content Area (Right Column on Large Screens) */}
-        <div className="lg:w-2/3 p-6 sm:p-8 flex flex-col gap-8">
-
-          {/* Professional Summary (Condensed from original hero) */}
-          <section className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
-            <h2 className="text-2xl font-bold text-blue-400 mb-3">Professional Summary</h2>
-            <p className="text-lg leading-relaxed text-gray-300">{resumeData.summary}</p>
-          </section>
-
-          {/* Achievements Section */}
-          <section className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
-            <h2 className="text-2xl font-bold text-blue-400 mb-5">Key Achievements</h2>
-            <ul className="list-none text-gray-300 space-y-4 text-lg">
-              {resumeData.achievements.map((achievement, index) => (
-                <li key={index} className="leading-relaxed relative pl-6">
-                  <span className="absolute left-0 text-blue-300">⭐</span> {achievement}
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* Work History Section */}
-          <section className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
-            <h2 className="text-2xl font-bold text-blue-400 mb-5">Work History</h2>
-            <div className="space-y-10">
-              {resumeData.workHistory.map((job, index) => (
-                <React.Fragment key={index}>
-                  {index > 0 && job.company === resumeData.workHistory[index - 1].company && (
-                      <div className="text-center text-gray-400 text-sm mt-6 mb-4 flex items-center justify-center">
-                          <span className="flex-grow border-t border-gray-600"></span>
-                          <span className="mx-4 italic">Continued at {job.company}</span>
-                          <span className="flex-grow border-t border-gray-600"></span>
-                      </div>
-                  )}
-                  <div className="bg-gray-700 p-6 rounded-xl shadow-md border border-gray-600 transform hover:scale-[1.01] transition-transform duration-200 ease-out">
-                    <div className="flex items-center gap-4 mb-3">
-                      {job.logo && (
-                        <img
-                          src={job.logo}
-                          alt={`${job.company} logo`}
-                          className="w-10 h-10 rounded-full object-contain bg-white p-1 shadow-inner flex-shrink-0"
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = "https://placehold.co/40x40/555555/ffffff?text=CO";
-                          }}
-                        />
-                      )}
-                      <div>
-                        <h3 className="text-2xl font-bold text-white">{job.title}</h3>
-                        <a href={job.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-lg text-gray-200 hover:text-blue-300 hover:underline transition-colors mt-1 block">
-                          {job.company}
-                        </a>
-                        <p className="text-sm text-gray-400">{job.period}</p>
-                      </div>
-                    </div>
-                    <ul className="list-disc list-inside text-gray-300 space-y-2">
-                      {job.bullets.map((bullet, i) => (
-                        <li key={i} className="leading-relaxed">{bullet}</li>
-                      ))}
-                    </ul>
-                    {job.keyDeliverables && job.keyDeliverables.length > 0 && (
-                      <div className="mt-4 p-4 bg-gray-600/50 rounded-lg border border-gray-500">
-                        <p className="text-md font-semibold text-white mb-2">Key Projects / Deliverables:</p>
-                        <ul className="list-disc list-inside text-gray-300 text-sm space-y-1">
-                          {job.keyDeliverables.map((deliverable, i) => (
-                            <li key={i}>{deliverable}</li>
-                          ))}
-                        </ul>
-                      </div>
+            {/* Certifications Section */}
+            <section className="bg-gray-800 p-6 rounded-xl shadow-inner border border-gray-700">
+              <h2 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2"><Award className="h-5 w-5"/> Certifications</h2>
+              <div className="space-y-4">
+                {resumeData.certifications.map((cert, index) => (
+                  <a
+                    key={index}
+                    href={cert.verificationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 group"
+                  >
+                    {cert.badgeUrl && (
+                      <img src={cert.badgeUrl} alt={`${cert.name} badge`} className="w-12 h-12 object-contain rounded-lg flex-shrink-0" />
                     )}
-                  </div>
-                </React.Fragment>
-              ))}
-            </div>
-          </section>
+                    <div>
+                      <h3 className="text-base font-semibold text-white group-hover:text-blue-300 transition-colors">{cert.name}</h3>
+                      <p className="text-xs text-gray-400">{cert.issuingBody}</p>
+                    </div>
+                    <Link className="ml-auto w-4 h-4 text-gray-400 group-hover:text-blue-300 transition-colors" />
+                  </a>
+                ))}
+              </div>
+            </section>
 
-          {/* Call to Action at the End */}
-          <section className="bg-gradient-to-br from-black to-blue-900 flex flex-col items-center justify-center p-8 text-center rounded-xl shadow-lg border border-blue-900">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-blue-300 drop-shadow-lg mb-6">
-              {resumeData.callToAction.text}
-            </h2>
-            <a
-              href={resumeData.callToAction.link}
-              className="bg-blue-600 hover:bg-blue-500 transition duration-300 rounded-xl px-8 py-4 font-bold text-xl shadow-lg transform hover:scale-105 mb-4 flex items-center gap-3"
-            >
-              <Mail className="h-7 w-7" /> {resumeData.callToAction.buttonText}
-            </a>
-            <a
-              href={resumeData.contact.linkedin.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white text-lg hover:underline opacity-80 hover:opacity-100 transition flex items-center gap-2"
-            >
-              <Linkedin className="h-6 w-6" /> {resumeData.callToAction.linkedinText}
-            </a>
-          </section>
+            {/* Skills Section (Moved to last in sidebar) */}
+            <section className="bg-gray-800 p-6 rounded-xl shadow-inner border border-gray-700">
+              <h2 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2"><Briefcase className="h-5 w-5"/> Skills</h2>
+              {['technical', 'business', 'soft'].map(category => (
+                <div key={category} className="mb-4 last:mb-0">
+                  <h3 className="text-lg font-semibold text-gray-200 capitalize mb-2">{category}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {resumeData.skills[category as keyof typeof resumeData.skills].map((skill, index) => (
+                      <span key={index} className="bg-gray-700 text-gray-300 text-sm px-3 py-1 rounded-full border border-gray-600">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </section>
+          </aside>
+
+          {/* Main Content Area (Right Column on Large Screens) */}
+          <main className="p-6 sm:p-10 space-y-10">
+
+            {/* Professional Summary */}
+            <section className="bg-gray-800 p-8 rounded-2xl shadow-md border border-gray-700">
+              <h2 className="text-2xl font-bold text-blue-400 mb-3">Professional Summary</h2>
+              <p className="text-lg leading-relaxed text-gray-300">{resumeData.summary}</p>
+            </section>
+
+            {/* Achievements Section */}
+            <section className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
+              <h2 className="text-2xl font-bold text-blue-400 mb-5">Key Achievements</h2>
+              <ul className="list-none text-gray-300 space-y-4 text-lg">
+                {resumeData.achievements.map((achievement, index) => (
+                  <li key={index} className="leading-relaxed relative pl-6">
+                    <span className="absolute left-0 text-blue-300">⭐</span> {achievement}
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {/* Work History Section */}
+            <section className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
+              <h2 className="text-2xl font-bold text-blue-400 mb-5">Work History</h2>
+              <div className="space-y-10">
+                {resumeData.workHistory.map((job, index) => (
+                  <React.Fragment key={index}>
+                    {/* Conditional "Continued at" label for consecutive roles at the same company */}
+                    {index > 0 && job.company === resumeData.workHistory[index - 1].company && (
+                        <div className="text-center text-gray-400 text-sm mt-6 mb-4 flex items-center justify-center">
+                            <span className="flex-grow border-t border-gray-600"></span>
+                            <span className="mx-4 italic">Continued at {job.company}</span>
+                            <span className="flex-grow border-t border-gray-600"></span>
+                        </div>
+                    )}
+                    <div className="bg-gray-700 p-6 rounded-xl shadow-md border border-gray-600 transform hover:scale-[1.01] transition-transform duration-200 ease-out">
+                      <div className="flex items-center gap-4 mb-3">
+                        {job.logo && (
+                          <img
+                            src={job.logo}
+                            alt={`${job.company} logo`}
+                            className="w-10 h-10 rounded-full object-contain bg-white p-1 shadow-inner flex-shrink-0"
+                            // Add an onError handler for broken images if you prefer a fallback
+                            onError={(e) => {
+                              e.currentTarget.onerror = null; // Prevents infinite loop if fallback also fails
+                              e.currentTarget.src = "https://placehold.co/40x40/555555/ffffff?text=CO"; // Fallback placeholder
+                            }}
+                          />
+                        )}
+                        <div>
+                          <h3 className="text-2xl font-bold text-white">{job.title}</h3>
+                          <a href={job.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-lg text-gray-200 hover:text-blue-300 hover:underline transition-colors mt-1 block">
+                            {job.company}
+                          </a>
+                          {/* Format period for display */}
+                          <p className="text-sm text-gray-400">{job.period.replace(/-/g, ' - ')}</p>
+                        </div>
+                      </div>
+                      <ul className="list-disc list-inside text-gray-300 space-y-2">
+                        {job.bullets.map((bullet, i) => (
+                          <li key={i} className="leading-relaxed">{bullet}</li>
+                        ))}
+                      </ul>
+                      {job.keyDeliverables && job.keyDeliverables.length > 0 && (
+                        <div className="mt-4 p-4 bg-gray-600/50 rounded-lg border border-gray-500">
+                          <p className="text-md font-semibold text-white mb-2">Key Projects / Deliverables:</p>
+                          <ul className="list-disc list-inside text-gray-300 text-sm space-y-1">
+                            {job.keyDeliverables.map((deliverable, i) => (
+                              <li key={i}>{deliverable}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+            </section>
+
+            {/* Major Clients Section */}
+            <section className="bg-gray-800 p-6 rounded-xl shadow-md border border-gray-700">
+              <h2 className="text-2xl font-bold text-blue-400 mb-6">Major Clients & Impact</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {resumeData.majorClients.map((client, index) => (
+                  <div key={index} className="bg-gray-700 p-6 rounded-xl shadow-md border border-gray-600 transform hover:scale-[1.02] transition-transform duration-200 ease-out">
+                    <h3 className="text-xl font-bold text-white mb-2">{client.name}</h3>
+                    <p className="text-lg text-gray-200 mb-1">Industry: <span className="font-semibold">{client.industry}</span></p>
+                    <p className="text-gray-300 leading-relaxed italic">{client.impact}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Call to Action at the End */}
+            <section className="bg-gradient-to-br from-black to-blue-900 flex flex-col items-center justify-center p-8 text-center rounded-xl shadow-lg border border-blue-900">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-blue-300 drop-shadow-lg mb-6">
+                {resumeData.callToAction.text}
+              </h2>
+              <a
+                href={resumeData.callToAction.link}
+                className="bg-blue-600 hover:bg-blue-500 transition duration-300 rounded-xl px-8 py-4 font-bold text-xl shadow-lg transform hover:scale-105 mb-4 flex items-center gap-3"
+              >
+                <Mail className="h-7 w-7" /> {resumeData.callToAction.buttonText}
+              </a>
+              <a
+                href={resumeData.contact.linkedin.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white text-lg hover:underline opacity-80 hover:opacity-100 transition flex items-center gap-2"
+              >
+                <Linkedin className="h-6 w-6" /> {resumeData.callToAction.linkedinText}
+              </a>
+            </section>
+          </main>
         </div>
       </div>
 
-      {/* Footer (outside the two-column grid) */}
-      <footer className="py-6 bg-gray-950 text-center text-gray-500 text-sm mt-8">
+      {/* Footer (outside the main content block for full width alignment) */}
+      <footer className="py-6 bg-gray-950 text-center text-gray-500 text-sm mt-8 w-full max-w-6xl">
         <p>&copy; {new Date().getFullYear()} Elias M. Kizito. All rights reserved.</p>
       </footer>
     </div>
