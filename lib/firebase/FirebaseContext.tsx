@@ -1,43 +1,67 @@
 // src/lib/firebase/FirebaseContext.tsx
-// This file contains the Firebase Context, custom hook, and Provider component.
-// It should be placed in your Next.js project, e.g., src/lib/firebase/FirebaseContext.tsx.
+// This file sets up Firebase, provides its instances via React Context,
+// and handles the initial authentication state.
 
-"use client"; // This is a Client Component, which needs access to browser APIs like process.env
+"use client"; // This directive marks this file as a Client Component,
+             // allowing it to use React Hooks and access browser-specific APIs (like process.env for client-side environment variables).
 
 import { useState, useEffect, createContext, useContext } from "react";
-import { getDownloadURL, ref, uploadBytesResumable, getStorage } from 'firebase/storage';
-import { initializeApp, getApps, getApp, FirebaseOptions, FirebaseApp } from 'firebase/app'; // Import FirebaseApp and FirebaseOptions
+// Firebase App Initialization
+import { initializeApp, getApps, getApp, FirebaseOptions, FirebaseApp } from 'firebase/app';
+// Firebase Authentication
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
+// Firebase Firestore Database
 import { getFirestore } from 'firebase/firestore';
+// Firebase Cloud Storage
+import { getStorage } from 'firebase/storage';
 
-// Define the type for the Firebase context value
+/**
+ * @typedef FirebaseContextType
+ * @property {any | null} db - The Firestore database instance.
+ * @property {any | null} auth - The Firebase Authentication instance.
+ * @property {any | null} storage - The Firebase Cloud Storage instance.
+ * @property {User | null} currentUser - The currently authenticated Firebase User object, or null if not logged in.
+ * @property {string | null} userId - The UID of the current user, or null.
+ * @property {boolean} isAuthReady - True if Firebase's initial authentication state check is complete.
+ * @property {(email: string, password: string) => Promise<any>} signInAdmin - Function to sign in an admin user.
+ * @property {() => Promise<void>} signOutAdmin - Function to sign out the current admin user.
+ */
 export type FirebaseContextType = {
-  db: any | null; // Firestore instance
-  auth: any | null; // Auth instance
-  storage: any | null; // Storage instance
-  currentUser: User | null; // Current authenticated user
-  userId: string | null; // Current user's UID
-  isAuthReady: boolean; // Flag indicating if authentication state has been determined
-  signInAdmin: (email: string, password: string) => Promise<any>; // Function to sign in admin
-  signOutAdmin: () => Promise<void>; // Function to sign out admin
+  db: any | null;
+  auth: any | null;
+  storage: any | null;
+  currentUser: User | null;
+  userId: string | null;
+  isAuthReady: boolean;
+  signInAdmin: (email: string, password: string) => Promise<any>;
+  signOutAdmin: () => Promise<void>;
 };
 
-// Create the Firebase context
+/**
+ * Creates the React Context for Firebase.
+ * Components can consume this context to access Firebase services.
+ */
 export const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
 
-// Custom hook to consume the Firebase context
+/**
+ * Custom hook to easily access Firebase services from any component
+ * wrapped by the FirebaseProvider.
+ * @returns {FirebaseContextType} The Firebase context object.
+ * @throws {Error} If used outside of a FirebaseProvider.
+ */
 export const useFirebase = () => {
   const context = useContext(FirebaseContext);
   if (!context) {
-    // This error indicates useFirebase was called outside of a FirebaseProvider.
-    // Ensure FirebaseProvider wraps the component tree that uses this hook.
-    throw new Error('useFirebase must be used within a FirebaseProvider');
+    throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
   return context;
 };
 
-// Define a type that explicitly allows undefined for Firebase config properties
-// This accurately reflects the type when reading directly from process.env
+/**
+ * @interface LooseFirebaseOptions
+ * Represents the Firebase configuration object, allowing properties to be undefined.
+ * This is useful when reading directly from process.env, as values might not be set.
+ */
 interface LooseFirebaseOptions {
   apiKey?: string;
   authDomain?: string;
@@ -45,13 +69,16 @@ interface LooseFirebaseOptions {
   storageBucket?: string;
   messagingSenderId?: string;
   appId?: string;
-  measurementId?: string; // Optional in FirebaseOptions, so also optional here
+  measurementId?: string; // Optional: only if you use Google Analytics
 }
 
-// Type guard to check if the firebaseConfig object is fully defined and meets FirebaseOptions requirements
-function isFirebaseOptions(config: LooseFirebaseOptions): config is FirebaseOptions {
-  // Check that all required properties exist and are strings (not undefined, null, or empty string).
-  // measurementId is optional in FirebaseOptions, so it's not strictly required here for the type guard.
+/**
+ * Type guard to check if the provided configuration object is a valid FirebaseOptions object.
+ * It ensures all required properties are strings and not empty.
+ * @param {LooseFirebaseOptions} config - The configuration object to validate.
+ * @returns {boolean} True if the config is valid for Firebase initialization.
+ */
+function isValidFirebaseOptions(config: LooseFirebaseOptions): config is FirebaseOptions {
   return (
     typeof config.apiKey === 'string' && config.apiKey.length > 0 &&
     typeof config.authDomain === 'string' && config.authDomain.length > 0 &&
@@ -62,20 +89,24 @@ function isFirebaseOptions(config: LooseFirebaseOptions): config is FirebaseOpti
   );
 }
 
-// Firebase Provider Component responsible for initializing Firebase and managing auth state.
+/**
+ * @component FirebaseProvider
+ * Provides Firebase service instances (Auth, Firestore, Storage) to its children.
+ * It initializes Firebase once and manages the user's authentication state.
+ * @param {React.PropsWithChildren} { children } - The child components to be rendered within the provider's scope.
+ */
 export const FirebaseProvider = ({ children }: { children: React.ReactNode }) => {
   const [db, setDb] = useState<any>(null);
   const [auth, setAuth] = useState<any>(null);
   const [storage, setStorage] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false); // Tracks if Firebase auth state has been initially checked
+  const [isAuthReady, setIsAuthReady] = useState(false); // Flag for initial auth state check completion
 
   useEffect(() => {
-    // Define the Firebase configuration using Next.js environment variables.
-    // These variables should be defined in your .env.local file for local development
-    // and in your hosting provider's environment settings for deployment.
-    // We use LooseFirebaseOptions to correctly type the potentially undefined values.
+    // Construct the Firebase configuration from Next.js public environment variables.
+    // These variables must be prefixed with NEXT_PUBLIC_ and defined in your .env.local file
+    // for local development, and in your hosting provider's settings for deployment.
     const rawFirebaseConfig: LooseFirebaseOptions = {
       apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
       authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -83,106 +114,114 @@ export const FirebaseProvider = ({ children }: { children: React.ReactNode }) =>
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
       messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-      measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+      measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, // Include if you use Analytics
     };
 
-    // Use the type guard to check if the config is valid FirebaseOptions.
-    // This explicitly checks for non-empty strings.
-    if (!isFirebaseOptions(rawFirebaseConfig)) {
+    // Validate the Firebase configuration.
+    // If invalid, log a critical error and disable Firebase functionality.
+    if (!isValidFirebaseOptions(rawFirebaseConfig)) {
       console.error(
-        "CRITICAL ERROR: Firebase configuration environment variables are incomplete or missing. " +
-        "Please ensure all required NEXT_PUBLIC_FIREBASE_* variables are set in your .env.local " +
-        "file (for local development) or your hosting provider's environment variables (for deployment)." +
+        "CRITICAL ERROR: Firebase environment variables are incomplete or invalid. " +
+        "Please ensure all required NEXT_PUBLIC_FIREBASE_* variables are set as non-empty strings " +
+        "in your .env.local (for local dev) or deployment environment variables." +
         "Firebase functionality will be disabled."
       );
-      // Set isAuthReady to true to prevent the loading spinner from hanging indefinitely,
-      // but Firebase services will not be initialized.
-      setIsAuthReady(true);
+      setIsAuthReady(true); // Allow UI to render, but without Firebase functionality
       setDb(null);
       setAuth(null);
       setStorage(null);
       setCurrentUser(null);
       setUserId(null);
-      return;
+      return; // Stop initialization
     }
 
-    // At this point, TypeScript knows that rawFirebaseConfig is indeed FirebaseOptions
-    // due to the type guard, so we can safely use it.
-    let app: FirebaseApp;
+    // If validation passes, `rawFirebaseConfig` is now guaranteed to be `FirebaseOptions`.
+    const firebaseConfig: FirebaseOptions = rawFirebaseConfig;
+    let firebaseAppInstance: FirebaseApp;
+
     try {
-      // Initialize Firebase app. If an app has already been initialized (e.g., during Fast Refresh),
-      // get the existing app instance to prevent re-initialization errors.
+      // Initialize Firebase app. If an app has already been initialized (e.g., due to Next.js Fast Refresh),
+      // get the existing instance to prevent errors.
       if (getApps().length) {
-        app = getApp();
+        firebaseAppInstance = getApp();
       } else {
-        app = initializeApp(rawFirebaseConfig); // Pass the now-validated config
+        firebaseAppInstance = initializeApp(firebaseConfig);
       }
 
-      // Get instances of Firebase services
-      const firestore = getFirestore(app);
-      const firebaseAuth = getAuth(app);
-      const firebaseStorage = getStorage(app);
+      // Get instances of specific Firebase services
+      const firestore = getFirestore(firebaseAppInstance);
+      const firebaseAuth = getAuth(firebaseAppInstance);
+      const firebaseStorage = getStorage(firebaseAppInstance); // Initialize storage
 
-      // Set state with the initialized Firebase service instances
+      // Store these instances in state
       setDb(firestore);
       setAuth(firebaseAuth);
       setStorage(firebaseStorage);
 
-      // Set up an authentication state listener to track the current user.
-      // This runs whenever the user's login status changes.
+      // Set up a listener for authentication state changes.
+      // This listener updates `currentUser` and `userId` state whenever the user logs in/out.
       const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
         setCurrentUser(user);
         setUserId(user ? user.uid : null);
-        setIsAuthReady(true); // Indicate that the initial authentication state check is complete
-        console.log("Admin Auth state changed. User:", user ? user.email : "None");
+        setIsAuthReady(true); // Mark auth state check as complete
+        console.log("Firebase Auth state changed. Current User:", user ? user.email : "None");
       });
 
       // Cleanup function: unsubscribe from the auth listener when the component unmounts.
       return () => unsubscribe();
     } catch (error: any) {
-      // Log any errors during Firebase initialization.
       console.error(
-        "Failed to initialize Firebase for Admin. " +
-        "Please check your environment variables, Firebase project settings, and internet connection:",
+        "Failed to initialize Firebase services. " +
+        "Please check your Firebase configuration and internet connection:",
         error.message, error
       );
-      // Ensure UI unblocks even on initialization error by setting isAuthReady to true.
+      setIsAuthReady(true); // Ensure UI unblocks even on initialization failure
       setDb(null);
       setAuth(null);
       setStorage(null);
     }
-  }, []); // Empty dependency array ensures this effect runs only once on component mount
+  }, []); // Empty dependency array ensures this effect runs only once on mount
 
-  // Function to sign in an admin user with email and password.
+  /**
+   * Signs in an admin user with email and password.
+   * @param {string} email - The admin's email.
+   * @param {string} password - The admin's password.
+   * @returns {Promise<any>} A promise that resolves with user credentials.
+   * @throws {Error} If Firebase Auth is not initialized.
+   */
   const signInAdmin = async (email: string, password: string) => {
     if (!auth) {
-      // If auth is not initialized (due to config error), throw an error.
-      throw new Error("Firebase Auth not initialized. Check your environment variables.");
+      throw new Error("Firebase Auth service is not initialized. Cannot sign in.");
     }
     return await signInWithEmailAndPassword(auth, email, password);
   };
 
-  // Function to sign out the current admin user.
+  /**
+   * Signs out the current admin user.
+   * @returns {Promise<void>} A promise that resolves when the user is signed out.
+   * @throws {Error} If Firebase Auth is not initialized.
+   */
   const signOutAdmin = async () => {
     if (!auth) {
-      // If auth is not initialized, throw an error.
-      throw new Error("Firebase Auth not initialized. Cannot sign out.");
+      throw new Error("Firebase Auth service is not initialized. Cannot sign out.");
     }
     await signOut(auth);
   };
 
-  // The value provided to components wrapped by FirebaseContext.Provider.
+  /**
+   * The value object passed down to all consumers of FirebaseContext.
+   */
   const contextValue = { db, auth, storage, currentUser, userId, isAuthReady, signInAdmin, signOutAdmin };
 
   return (
     <FirebaseContext.Provider value={contextValue}>
-      {/* Show a loading indicator until the authentication state is determined. */}
+      {/* Show a loading indicator until the Firebase authentication state is determined. */}
       {!isAuthReady && (
-        <div className="fixed inset-0 bg-gray-950 flex items-center justify-center text-white text-xl">
+        <div className="fixed inset-0 bg-gray-950 flex items-center justify-center text-white text-xl z-50">
           Loading Admin Application...
         </div>
       )}
-      {/* Render children components only when authentication readiness is determined. */}
+      {/* Render children only once the authentication state has been checked. */}
       {isAuthReady && children}
     </FirebaseContext.Provider>
   );
