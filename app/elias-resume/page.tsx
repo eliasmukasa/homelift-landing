@@ -19,7 +19,15 @@ const resumeData = {
       display: "linkedin.com/in/eliasmukasa"
     },
   },
-  summary: "A highly strategic and results-driven Enterprise Sales Executive with over a decade of proven success in consultative selling, managed services, and digital transformation across Telecom, IT, and Technology sectors. Adept at cultivating multi-stakeholder relationships, leading complex global bids, and aligning technical solutions with C-level business objectives to drive significant revenue growth and market expansion. Bilingual in English & French. Passionate about leveraging technology to simplify complex home-care challenges.",
+  summary: `
+        I help enterprises drive digital-transformation initiatives, optimize technology investments, and accelerate growth. With a background in enterprise sales, consulting, telecom, I.T. & engineering, I work with Fortune 500 companies, high-growth startups, and agencies to deliver data-driven strategies and measurable business impact.
+
+        My Expertise:
+        ✅ Enterprise Sales & Consulting Growth – Leading high-value consulting, SaaS, and technology sales while building executive-level relationships.
+        ✅ Data-Driven Decision Making – Leveraging analytics & insights to improve business strategy, revenue growth, and customer success.
+        ✅ Strategic Account Management – Expanding enterprise accounts, fostering cross-functional collaboration, and driving client success.
+        ✅ Engineering & Technology Optimization – 10 years’ expertise in telecom, IT infrastructure, cloud solutions, and technical program execution, applying an engineering-first approach to complex challenges.
+        `,
   keyStrengths: [
     "Enterprise Account Growth & Retention",
     "Strategic Partnership Development",
@@ -156,11 +164,11 @@ const resumeData = {
     },
   ],
   certifications: [
+    { name: "Business Analytics: From Data to Insights", issuingBody: "The Wharton School", badgeUrl: "https://res.cloudinary.com/dtrnpryf8/image/upload/v1750334131/Wharton-logo_qtrusa.png", verificationUrl: "https://certificates.emeritus.org/dde1763f-fe88-4a30-93cc-8ad902955175#acc.U0ymaHin" },
+    { name: "Python for Managers", issuingBody: "Columbia University", badgeUrl: "https://res.cloudinary.com/dtrnpryf8/image/upload/v1750334030/4a0a38fc98e53426428e1dc08f8a1a5b_lafsay.png", verificationUrl: "https://certificates.emeritus.org/b7e66709-aab9-422a-945b-18f7dde74057#acc.oMjp5Ak2" },
     { name: "Project Management Professional (PMP)", issuingBody: "PMI", badgeUrl: "https://res.cloudinary.com/dtrnpryf8/image/upload/v1750333850/project-management-professional-pmp_oiua4w.png", verificationUrl: "https://www.credly.com/badges/e4b10790-5626-4fb7-983e-d9005ca84433/public_url" },
     { name: "Meta Certified Performance Marketing Specialist", issuingBody: "Meta", badgeUrl: "https://res.cloudinary.com/dtrnpryf8/image/upload/v1750333104/meta-certified-performance-marketing-specialist_yvlejs.png", verificationUrl: "https://www.credly.com/badges/43b5b651-c3ed-4666-aed0-83a490676beb/public_url" },
     { name: "Meta Certified Media Buying Professional", issuingBody: "Meta", badgeUrl: "https://res.cloudinary.com/dtrnpryf8/image/upload/v1750333167/meta-certified-media-buying-professional_tbbpqs.png", verificationUrl: "https://www.credly.com/badges/7140be50-9d20-493a-bf12-217502d803a4/public_url" },
-    { name: "Python for Managers", issuingBody: "Columbia University", badgeUrl: "https://res.cloudinary.com/dtrnpryf8/image/upload/v1750334030/4a0a38fc98e53426428e1dc08f8a1a5b_lafsay.png", verificationUrl: "https://certificates.emeritus.org/b7e66709-aab9-422a-945b-18f7dde74057#acc.oMjp5Ak2" },
-    { name: "Business Analytics: From Data to Insights", issuingBody: "The Wharton School", badgeUrl: "https://res.cloudinary.com/dtrnpryf8/image/upload/v1750334131/Wharton-logo_qtrusa.png", verificationUrl: "https://certificates.emeritus.org/dde1763f-fe88-4a30-93cc-8ad902955175#acc.U0ymaHin" },
   ],
   majorClients: [
     { name: "Global Telecom Operator X", industry: "Telecommunications", impact: "Led strategic account growth, resulting in 30% YoY revenue increase." },
@@ -310,7 +318,7 @@ export default function EliasKizitoResumePage() {
             {/* Professional Summary */}
             <section className="bg-gray-800 p-8 rounded-2xl shadow-md border border-gray-700">
               <h2 className="text-2xl font-bold text-blue-400 mb-3">Professional Summary</h2>
-              <p className="text-lg leading-relaxed text-gray-300">{resumeData.summary}</p>
+              <p className="text-lg leading-relaxed whitespace-pre-line text-gray-300">{resumeData.summary}</p>
             </section>
 
             {/* Achievements Section */}
