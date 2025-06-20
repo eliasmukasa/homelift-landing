@@ -297,7 +297,7 @@ export default function LandingPage() {
           <button
             type="button"
             onClick={() => setOpenForm("hh")}
-            className="hidden sm:inline-block bg-cyan-500 hover:bg-cyan-400 transition duration-300 rounded-xl px-4 py-2 font-bold text-sm shadow-md"
+            className="hidden sm:inline-block bg-orange-500 hover:bg-orange-400 transition duration-300 rounded-xl px-4 py-2 font-bold text-sm shadow-md"
           >
             Get Early Access
           </button>
@@ -361,7 +361,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => setOpenForm("hh")}
-              className="bg-cyan-500 hover:bg-cyan-400 transition duration-300 rounded-xl px-8 py-4 font-bold text-lg shadow-lg transform hover:scale-105"
+              className="bg-orange-500 hover:bg-orange-400 transition duration-300 rounded-xl px-8 py-4 font-bold text-lg shadow-lg transform hover:scale-105"
             >
               Get Early Access
             </button>
@@ -398,7 +398,7 @@ export default function LandingPage() {
            ></motion.div>
           <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 p-6 bg-gray-800/60 rounded-3xl shadow-xl border border-gray-700 relative z-20">
             <div>
-              <h2 className="text-3xl font-bold mb-6 text-cyan-300">Benefits for Households</h2>
+              <h2 className="text-3xl font-bold mb-6 text-orange-300">Benefits for Households</h2>
               <ul className="space-y-4 text-gray-200 list-disc list-inside text-lg">
                 <li>Free replacement in first 30 days - Your satisfaction, guaranteed.</li>
                 <li>UGX 200 K launch credit - Special offer for early adopters.</li>
@@ -564,7 +564,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => setOpenForm("hh")}
-              className="bg-cyan-500 hover:bg-cyan-400 transition duration-300 rounded-xl px-10 py-5 font-bold text-xl shadow-lg transform hover:scale-105"
+              className="bg-orange-500 hover:bg-orange-400 transition duration-300 rounded-xl px-10 py-5 font-bold text-xl shadow-lg transform hover:scale-105"
             >
               🏠 Find Your HCP
             </button>
