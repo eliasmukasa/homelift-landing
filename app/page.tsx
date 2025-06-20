@@ -101,11 +101,11 @@ function HowItWorksSectionComponent() {
   // const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
 
   const howItWorksData = [
-    { icon: "📋", title: "Tell Us Your Needs", desc: "Share your specific requirements. We help define the role and skills you need for your home." },
-    { icon: "✅", title: "Vetted & Trained Professionals", desc: "Our HCPs undergo rigorous background checks, police clearance, and continuous skills training to ensure excellence." },
-    { icon: "🎯", title: "Intelligent Matching", desc: "Leveraging our data-driven system, we expertly match your family with the most compatible and qualified HCPs." },
-    { icon: "🤝", title: "Seamless Placement", desc: "We facilitate a smooth onboarding process, ensuring your selected HCP integrates perfectly into your household routine." },
-    { icon: "📈", title: "Ongoing Support & Growth", desc: "Benefit from continuous support, managed payroll, and opportunities for HCPs to advance their careers through advanced certifications." },
+    { icon: <img src="/images/how-it-works-icons/clipboard-pen.png" alt="Clipboard with Pen Icon" className="h-20 w-20 object-contain" />, title: "Tell Us Your Needs", desc: "Share your specific requirements. We help define the role and skills you need for your home." },
+    { icon: <img src="/images/how-it-works-icons/star.png" alt="Star Icon" className="h-20 w-20 object-contain" />, title: "Vetted & Trained Professionals", desc: "Our HCPs undergo rigorous background checks, police clearance, and continuous skills training to ensure excellence." },
+    { icon: <img src="/images/how-it-works-icons/brain.png" alt="Brain Icon" className="h-20 w-20 object-contain" />, title: "Intelligent Matching", desc: "Leveraging our data-driven system, we expertly match your family with the most compatible and qualified HCPs." },
+    { icon: <img src="/images/how-it-works-icons/handshake.png" alt="Handshake Icon" className="h-20 w-20 object-contain" />, title: "Seamless Placement", desc: "We facilitate a smooth onboarding process, ensuring your selected HCP integrates perfectly into your household routine." },
+    { icon: <img src="/images/how-it-works-icons/phone.png" alt="Phone Icon" className="h-20 w-20 object-contain" />, title: "Ongoing Support & Growth", desc: "Benefit from continuous support, managed payroll, and opportunities for HCPs to advance their careers through advanced certifications." },
   ];
 
   // Title animations removed as it was tied to scrollYProgress
@@ -255,14 +255,14 @@ export default function LandingPage() {
       className="font-sans text-white min-h-[600vh] overflow-x-hidden relative"
     >
       {/* Fixed Header */}
-      <motion.header className="fixed top-0 left-0 right-0 z-50 bg-gray-950 bg-opacity-80 backdrop-blur-sm p-4 flex justify-between items-center shadow-lg">
+      <motion.header className="fixed top-0 left-0 right-0 z-50 bg-gray-950 bg-opacity-80 backdrop-blur-sm p-4 flex justify-between items-center shadow-lg h-20">
         <div className="flex items-center">
           {/* Your Tiny Logo Button */}
-          <a href="/" className="flex items-center hover:opacity-80 transition duration-300" aria-label="HomeLift Africa Home">
+          <a href="/" className="flex items-center hover:opacity-80 transition duration-300 mt-10" aria-label="HomeLift Africa Home">
             <img
-              src="https://placehold.co/40x40/007bff/ffffff?text=HL" // Placeholder URL, replace with your actual logo
+              src="/images/logos/2.png" // Updated to use the uploaded 6.png from public folder
               alt="HomeLift Africa Logo"
-              className="h-8 w-auto rounded-full object-contain"
+              className="h-70 w-auto object-contain" // Removed rounded-full class for full logo
               // Add onerror if you want a fallback for the image
               // onError={(e) => { e.target.onerror = null; e.target.src="path/to/fallback/logo.png"; }}
             />
@@ -297,7 +297,7 @@ export default function LandingPage() {
           <button
             type="button"
             onClick={() => setOpenForm("hh")}
-            className="hidden sm:inline-block bg-blue-600 hover:bg-blue-500 transition duration-300 rounded-xl px-4 py-2 font-bold text-sm shadow-md"
+            className="hidden sm:inline-block bg-cyan-500 hover:bg-cyan-400 transition duration-300 rounded-xl px-4 py-2 font-bold text-sm shadow-md"
           >
             Get Early Access
           </button>
@@ -340,7 +340,7 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-5xl md:text-7xl font-extrabold max-w-4xl leading-tight drop-shadow-lg z-10"
           >
-            Home life, <span className="text-blue-400">simplified</span>. Care you can <span className="text-blue-400">trust</span>.
+            Home life, <span className="text-teal-400">simplified</span>. Care you can <span className="text-teal-400">trust</span>.
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 50 }}
@@ -361,7 +361,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => setOpenForm("hh")}
-              className="bg-blue-600 hover:bg-blue-500 transition duration-300 rounded-xl px-8 py-4 font-bold text-lg shadow-lg transform hover:scale-105"
+              className="bg-cyan-500 hover:bg-cyan-400 transition duration-300 rounded-xl px-8 py-4 font-bold text-lg shadow-lg transform hover:scale-105"
             >
               Get Early Access
             </button>
@@ -398,7 +398,7 @@ export default function LandingPage() {
            ></motion.div>
           <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 p-6 bg-gray-800/60 rounded-3xl shadow-xl border border-gray-700 relative z-20">
             <div>
-              <h2 className="text-3xl font-bold mb-6 text-blue-300">Benefits for Households</h2>
+              <h2 className="text-3xl font-bold mb-6 text-cyan-300">Benefits for Households</h2>
               <ul className="space-y-4 text-gray-200 list-disc list-inside text-lg">
                 <li>Free replacement in first 30 days - Your satisfaction, guaranteed.</li>
                 <li>UGX 200 K launch credit - Special offer for early adopters.</li>
@@ -422,7 +422,7 @@ export default function LandingPage() {
         <motion.section
           ref={howItWorksRef}
           style={{ opacity: howItWorksOpacity, y: howItWorksY }}
-          className="relative min-h-screen flex flex-col items-center justify-center p-8 z-10"
+          className="relative min-h-[100vh] flex flex-col items-center justify-center p-8 z-10"
         >
           <motion.div
               className="absolute inset-0 bg-black/80 backdrop-blur-md" // Even darker blur overlay
@@ -432,17 +432,17 @@ export default function LandingPage() {
             <h2 className="text-4xl md:text-5xl font-bold text-white drop-shadow-md">How HomeLift Works</h2>
             <div className="grid md:grid-cols-3 gap-10 mt-8">
               {[
-                { icon: '📝', title: 'Tell Us Your Needs', desc: 'Share your specific requirements. We help define the role and skills you need for your home.' },
-                { icon: '🌟', title: 'Vetted & Trained Professionals', desc: 'Our HCPs undergo rigorous background checks, police clearance, and continuous skills training to ensure excellence.' }, // Andela-inspired
-                { icon: '🧠', title: 'Intelligent Matching', desc: 'Leveraging our data-driven system, we expertly match your family with the most compatible and qualified HCPs.' }, // Andela-inspired
-                { icon: '🤝', title: 'Seamless Placement', desc: 'We facilitate a smooth onboarding process, ensuring your selected HCP integrates perfectly into your household routine.' }, // Andela-inspired
-                { icon: '📞', title: 'Ongoing Support & Growth', desc: 'Benefit from regular performance reviews, managed payroll, and opportunities for HCPs to advance their careers through advanced certifications.' }, // Andela-inspired
+                { icon: <img src="/images/how-it-works-icons/clipboard-pen.png" alt="Clipboard with Pen Icon" className="h-20 w-20 object-contain" />, title: "Tell Us Your Needs", desc: "Share your specific requirements. We help define the role and skills you need for your home." },
+                { icon: <img src="/images/how-it-works-icons/star.png" alt="Star Icon" className="h-20 w-20 object-contain" />, title: "Vetted & Trained Professionals", desc: "Our HCPs undergo rigorous background checks, police clearance, and continuous skills training to ensure excellence." },
+                { icon: <img src="/images/how-it-works-icons/brain.png" alt="Brain Icon" className="h-20 w-20 object-contain" />, title: "Intelligent Matching", desc: "Leveraging our data-driven system, we expertly match your family with the most compatible and qualified HCPs." },
+                { icon: <img src="/images/how-it-works-icons/handshake.png" alt="Handshake Icon" className="h-20 w-20 object-contain" />, title: "Seamless Placement", desc: "We facilitate a smooth onboarding process, ensuring your selected HCP integrates perfectly into your household routine." },
+                { icon: <img src="/images/how-it-works-icons/phone.png" alt="Phone Icon" className="h-20 w-20 object-contain" />, title: "Ongoing Support & Growth", desc: "Benefit from regular performance reviews, managed payroll, and opportunities for HCPs to advance their careers through advanced certifications." },
               ].map((item, index) => (
                 <div
                   key={item.title}
                   className="p-10 bg-gray-800/80 rounded-3xl border border-gray-700 shadow-xl flex flex-col items-center justify-center drop-shadow-xl transform hover:scale-105 transition duration-300" // Added hover effect
                 >
-                  <span className="text-6xl mb-5 text-blue-400">{item.icon}</span>
+                  <span className="text-6xl mb-5 text-blue-400">{item.icon}</span> {/* Removed text-color as it's now an image */}
                   <h3 className="font-semibold text-2xl mb-3 text-white">{item.title}</h3>
                   <p className="text-gray-400 text-base text-center">{item.desc}</p>
                 </div>
@@ -450,6 +450,7 @@ export default function LandingPage() {
             </div>
           </div>
         </motion.section>
+
 
         {/* Testimonials Section - Cards slide in over fixed background */}
         <motion.section
@@ -550,7 +551,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-4xl md:text-5xl font-extrabold text-blue-300 drop-shadow-lg mb-8"
+            className="text-4xl md:text-5xl font-extrabold text-teal-300 drop-shadow-lg mb-8"
           >
             Ready to lift your home life?
           </motion.h2>
@@ -563,7 +564,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => setOpenForm("hh")}
-              className="bg-blue-600 hover:bg-blue-500 transition duration-300 rounded-xl px-10 py-5 font-bold text-xl shadow-lg transform hover:scale-105"
+              className="bg-cyan-500 hover:bg-cyan-400 transition duration-300 rounded-xl px-10 py-5 font-bold text-xl shadow-lg transform hover:scale-105"
             >
               🏠 Find Your HCP
             </button>
