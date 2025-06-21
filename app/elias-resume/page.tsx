@@ -40,21 +40,23 @@ const resumeData = {
   ],
   skills: {
     technical: [
-      "CRM Software (Salesforce, HubSpot)",
+      "CRM Software (Salesforce, etc)",
       "Project Management Tools (Jira, Asana)",
-      "Data Analytics (Power BI, Excel)",
-      "Cloud Platforms (Azure, AWS - Conceptual)",
+      "Data Analytics (Power BI, Excel, Python)",
+      "Cloud Platforms (Azure, AWS, GCP)",
       "Networking (WAN/LAN, NOC Operations)",
-      "Mobile Money & Digital Payments",
+      "Telecom Solutions (OSS/BSS)",
+      "5G & IoT Technologies",
+      "A.I & Machine Learning Applications"
     ],
     business: [
       "Consultative Selling",
       "Strategic Account Planning",
-      "Go-to-Market Strategy",
+      "Customer Success Management",
       "Business Development",
       "Contract Negotiation",
       "Market Research & Analysis",
-      "Customer Relationship Management (CRM)"
+      "Customer Relationship Management"
     ],
     soft: [
       "Strategic Communication",
@@ -73,7 +75,7 @@ const resumeData = {
   ],
   workHistory: [
     {
-      period: "2021-09 - Present",
+      period: "2021-09 - 2025-04",
       title: "Sr. Client Partner, Enterprise",
       company: "Andela Inc",
       companyWebsite: "https://andela.com/",
@@ -154,13 +156,12 @@ const resumeData = {
       degree: "Masters of Business Administration (MBA)",
       institution: "Herriot Watt University, Edinburgh Business School",
       location: "Edinburgh, UK",
-      period: "N/A"
+      
     },
     {
       degree: "Bachelor of Science: Electrical & Electronics Engineering",
       institution: "University of Boumerdes",
-      location: "N/A",
-      period: "N/A"
+      
     },
   ],
   certifications: [
@@ -263,7 +264,6 @@ export default function EliasKizitoResumePage() {
                     <h3 className="text-lg font-semibold text-white">{edu.degree}</h3>
                     <p className="text-md text-gray-200">{edu.institution}</p>
                     {edu.location && <p className="text-sm text-gray-400">{edu.location}</p>}
-                    {edu.period && <p className="text-sm text-gray-400">{edu.period}</p>}
                   </div>
                 ))}
               </div>
